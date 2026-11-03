@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memory Duel</title>
+<meta name="description" content="Watch six memory strategies for AI chat answer the same questions after months of conversation, and learn what each one keeps, forgets and costs.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Memory Duel">
+<meta property="og:title" content="Memory Duel: which AI memory remembers?">
+<meta property="og:description" content="Six memory strategies, one chat history, side by side.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Oswald:wght@700&display=swap">
+<style>
+/* Layout: Retrieval Duel's frame (step rail, lesson slides, side-by-side cards) in Pine & Apricot. Single dark look, by choice. */
+:root{
+  color-scheme: dark;
+  --ink:#08160f; --deck:#0e2118; --deck2:#12291e; --line:#1e3d2d; --line2:#2a5139;
+  --fg:#e8f3ec; --muted:#93b4a0; --faint:#5e7e6a;
+  --accent:#ffa266; --accent-glow:rgba(255,162,102,.55);
+  --ok:#7ee39a; --part:#ffd95e; --stale:#ffb347; --miss:#8fb09c; --bad:#ff6b6b;
+  --display:'Unbounded','Arial Black',system-ui,sans-serif;
+  --body:'Instrument Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--ink);margin:0}
+html{overflow-y:scroll;scrollbar-gutter:stable}
+body{color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+  background-image:radial-gradient(circle at 1px 1px, rgba(147,180,160,.09) 1px, transparent 0);background-size:22px 22px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 60px;display:flex;flex-direction:column;gap:20px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand h1{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.6vw,38px);letter-spacing:-.01em;margin:0;line-height:1}
+.brand h1 .a{color:#6ff0a8} .brand h1 .b{color:var(--accent)}
+.brand p{margin:7px 0 0;color:var(--muted);font-size:14px}
+.modechip{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line2);padding:3px 9px;border-radius:99px;white-space:nowrap}
+.modechip.live{color:var(--ok);border-color:rgba(126,227,154,.5)}
+.topright{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+nav.steps{display:flex;gap:6px;flex-wrap:wrap}
+nav.steps button{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:center;color:var(--muted);font-weight:600}
+nav.steps button .n{font-family:var(--mono);font-size:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line2)}
+nav.steps button[aria-current="step"]{color:var(--fg);border-color:var(--fg);background:var(--deck)}
+nav.steps button[aria-current="step"] .n{background:var(--fg);color:var(--ink);border-color:var(--fg)}
+
+.step{display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h3{font-size:15px;margin:0;font-weight:700}
+.lede{color:var(--muted);max-width:76ch;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{background:var(--fg);color:var(--ink);border:0;border-radius:10px;padding:10px 16px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line2)}
+.btn.small{padding:7px 12px;font-size:13.5px}
+.btn.next{background:var(--accent);color:var(--ink);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 0 8px transparent}}
+.btn:disabled{opacity:.4;cursor:not-allowed;animation:none}
+.panel{border:1px solid var(--line);border-radius:14px;background:var(--deck);padding:16px;min-width:0}
+.cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.err{color:#ffc0c0;font-size:13.5px}
+
+/* basics slides */
+.slide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;align-items:center;min-height:360px}
+.slide .txt{display:flex;flex-direction:column;gap:12px}
+.slide .txt h2{font-size:clamp(20px,2.4vw,26px)}
+.slide .txt p{margin:0;max-width:58ch}
+.slide .txt p.m{color:var(--muted)}
+.slide .txt ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.slide .art svg{display:block;width:100%;height:auto}
+.slide-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dots button{width:26px;height:6px;border-radius:3px;border:0;background:var(--line2);padding:0}
+.dots button[aria-current="true"]{background:var(--accent)}
+svg text{font-family:var(--body)}
+
+/* history */
+.hist{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.track svg{display:block;width:100%;height:auto}
+.track .node{cursor:pointer}
+.sess-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.sess-head h3{font-family:var(--display);font-weight:700;font-size:16px}
+.sess-head .meta{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.chat{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:520px;overflow:auto;padding-right:6px}
+.bub{max-width:88%;padding:8px 11px;border-radius:12px;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.bub.user{align-self:flex-end;background:#163526;border:1px solid var(--line2)}
+.bub.assistant{align-self:flex-start;background:var(--ink);border:1px solid var(--line)}
+.bub .who{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+.bub mark{background:rgba(255,162,102,.25);color:var(--fg);border-radius:3px;padding:0 2px}
+.evs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ev{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line2);border-radius:99px;padding:2px 9px}
+.ev.new{border-color:rgba(126,227,154,.55);color:#c4f5d3}
+.ev.upd{border-color:rgba(255,179,71,.6);color:#ffd9a8}
+.ev.del{border-color:rgba(255,107,107,.6);color:#ffc0c0}
+.log svg{display:block;width:100%;height:auto}
+
+/* duel */
+.runbar{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between}
+.runbar .src{display:flex;flex-direction:column;gap:2px;min-width:0}
+.runbar .src b{font-size:14.5px}
+.runbar .src span{font-size:13px;color:var(--muted)}
+.prog{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px;margin-top:12px}
+.prog .p{display:flex;flex-direction:column;gap:4px;min-width:0}
+.prog .p .l{display:flex;justify-content:space-between;font-size:12.5px;gap:6px}
+.prog .p .l b{color:var(--k)}
+.prog .p .l span{font-family:var(--mono);font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--k);transition:width .4s}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ctrls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 12px;color:var(--muted);font-weight:600;font-size:14px}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--ink)}
+.slider{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.slider input{accent-color:#ff8f5a;width:140px}
+.slider b{color:#ff8f5a;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.who-chips{display:flex;flex-wrap:wrap;gap:6px}
+.who-chips button{border:1px solid var(--line2);background:transparent;border-radius:99px;padding:4px 10px 4px 8px;font-size:13px;display:flex;align-items:center;gap:6px;color:var(--muted)}
+.who-chips button i{width:10px;height:10px;border-radius:50%;display:block;background:var(--k);opacity:.35}
+.who-chips button[aria-pressed="true"]{color:var(--fg);border-color:var(--k)}
+.who-chips button[aria-pressed="true"] i{opacity:1}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.map{border:1px solid var(--line);border-top:2px solid var(--k);border-radius:12px;background:var(--deck);padding:12px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.map .hd{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap}
+.map .hd span:first-child{font-family:var(--display);font-weight:700;font-size:13px;color:var(--k)}
+.map .tok{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.map svg{display:block;width:100%;height:auto}
+.map .how{font-size:12.5px;color:var(--muted);margin:0}
+.map .err{font-size:12.5px}
+.tokbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.tokbar i{display:block;height:100%;background:var(--k);border-radius:3px;transition:width .4s}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.sc{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sc .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line)}
+.sc .bar i{display:block;height:100%}
+.sc .lab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted);gap:6px}
+.sc .lab b{color:var(--k);font-family:var(--display);font-size:12.5px}
+.qdeck{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.qcard{text-align:left;background:var(--deck);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0;transition:border-color .15s,transform .15s}
+.qcard:hover{border-color:var(--line2);transform:translateY(-1px)}
+.qcard[aria-pressed="true"]{border-color:var(--accent);background:#1b2a1a}
+.qcard .ty{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;gap:6px}
+.qcard .pips{display:flex;gap:3px}
+.qcard .pips i{width:8px;height:8px;border-radius:50%;display:block}
+.qcard .qq{font-size:14px}
+.refbox{border:1px dashed var(--line2);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--muted)}
+.refbox b{color:var(--fg);font-weight:600}
+.ans{border:1px solid var(--line);border-top:2px solid var(--k);border-radius:12px;background:var(--deck);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ans .who{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ans .who span:first-child{font-family:var(--display);font-weight:700;font-size:13px;color:var(--k)}
+.verdict{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:99px;padding:1px 8px;border:1px solid currentColor}
+.ans .text{font-size:15.5px;line-height:1.5}
+.ans .mem{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 9px;line-height:1.55;overflow-wrap:anywhere;max-height:220px;overflow:auto;white-space:pre-wrap}
+.ans .mem .hi{color:var(--fg)}
+.ans .mem mark{background:rgba(255,162,102,.22);color:var(--fg);border-radius:3px}
+.ans .mem s{color:var(--faint)}
+.ans .mem .tag{color:var(--k)}
+.ans .why{font-size:13px;color:var(--muted);margin:0}
+.ans .cost{font-family:var(--mono);font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* debrief */
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.charts svg,.matrix svg{display:block;width:100%;height:auto}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--deck)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:400}
+tr:last-child td{border-bottom:0}
+td .nm{font-weight:700;display:flex;align-items:center;gap:8px;white-space:nowrap}
+td .nm i{width:10px;height:10px;border-radius:50%;display:block;flex:none}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+
+.tip{position:fixed;pointer-events:none;max-width:280px;background:#06110b;border:1px solid var(--line2);border-radius:10px;padding:7px 10px;font-size:12.5px;line-height:1.4;color:var(--fg);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:20}
+.tip .t{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-bottom:2px}
+
+@media (max-width:980px){ .grid3,.prog{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:760px){
+  .slide,.hist,.charts{grid-template-columns:minmax(0,1fr)}
+  .grid3,.prog{grid-template-columns:minmax(0,1fr)}
+  .slide{min-height:0}
+  .topright{align-items:flex-start}
+}
+@media (prefers-reduced-motion:reduce){.btn.next,.spin{animation:none}.tokbar i,.prog .bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg id="logo" width="48" height="48" role="img" aria-label="Memory Duel"></svg>
+      <div>
+        <h1><span class="a">Memory</span> <span class="b">Duel</span></h1>
+        <p>Which memory remembers what you told it, months of chats later?</p>
+      </div>
+    </div>
+    <div class="topright">
+      <nav class="steps" aria-label="Steps">
+        <button data-step="basics"><span class="n">1</span>Basics</button>
+        <button data-step="history"><span class="n">2</span>History</button>
+        <button data-step="duel"><span class="n">3</span>Duel</button>
+        <button data-step="debrief"><span class="n">4</span>Debrief</button>
+      </nav>
+      <span class="modechip" id="modeChip">Loading…</span>
+    </div>
+  </header>
+
+  <!-- 1 BASICS -->
+  <section class="step" id="basics" hidden>
+    <div class="panel"><div class="slide" id="slide"></div></div>
+    <div class="slide-nav">
+      <div class="dots" id="dots"></div>
+      <div class="row">
+        <button class="btn ghost" id="prev">← Back</button>
+        <button class="btn next" id="nextSlide">Next →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 HISTORY -->
+  <section class="step" id="history" hidden>
+    <div>
+      <div class="eyebrow">The chat history</div>
+      <h2 id="histTitle">Meet Nell</h2>
+    </div>
+    <p class="lede" id="histLede"></p>
+    <div class="panel track"><div class="cap">Sessions · circle size shows length · ◆ marks a checkpoint quiz</div><svg id="track" viewBox="0 0 1000 96" role="img" aria-label="Timeline of sessions"></svg></div>
+    <div class="hist">
+      <div class="panel" id="sess"></div>
+      <div class="panel log">
+        <div class="cap">Answer key · what was true, session by session</div>
+        <svg id="log" viewBox="0 0 560 330" role="img" aria-label="Facts over the sessions"></svg>
+        <p class="note">Built from an event log, not from prose: every fact has a value and the session where it became true. That gives an exact right answer at any point in time, and the quiz questions come straight from it.</p>
+      </div>
+    </div>
+    <div class="row"><button class="btn next" data-go="duel">Next: run the duel →</button></div>
+  </section>
+
+  <!-- 3 DUEL -->
+  <section class="step" id="duel" hidden>
+    <div>
+      <div class="eyebrow">Checkpoint quiz</div>
+      <h2>Same history, six memories</h2>
+    </div>
+    <p class="lede">Each contestant replays the chats in order and keeps whatever its strategy keeps. After sessions 5, 10, 15 and 20, the assistant is quizzed using only that memory, and a judge grades each answer against the answer key. The maps show what each memory held about each fact after every session.</p>
+    <div class="panel">
+      <div class="runbar">
+        <div class="src"><b id="srcTitle">Saved results</b><span id="srcSub"></span></div>
+        <div class="row" id="runBtns"></div>
+      </div>
+      <div id="runInfo"></div>
+    </div>
+    <div class="ctrls">
+      <div><div class="cap">Quiz after session</div><div class="seg" id="cps"></div></div>
+      <div><div class="cap">Sliding window size</div><label class="slider"><input type="range" id="win" min="1" max="8" step="1" value="3"> last <b id="winv">3</b>&nbsp;sessions</label></div>
+      <div><button class="btn ghost small" id="replay">▶ Replay sessions</button></div>
+    </div>
+    <div><div class="cap">Contestants shown</div><div class="who-chips" id="whoChips"></div></div>
+    <div class="grid3" id="maps"></div>
+    <div class="legend" id="mapLegend"></div>
+    <div class="panel"><div class="cap" id="scoreCap">Score</div><div class="grid3" id="score"></div></div>
+    <div><div class="cap">Questions · pick one</div><div class="qdeck" id="qdeck"></div></div>
+    <div class="refbox" id="refbox"></div>
+    <div class="grid3" id="answers"></div>
+    <div class="row"><button class="btn next" data-go="debrief">Next: debrief →</button></div>
+  </section>
+
+  <!-- 4 DEBRIEF -->
+  <section class="step" id="debrief" hidden>
+    <div>
+      <div class="eyebrow">Debrief</div>
+      <h2>Accuracy against what it costs to remember</h2>
+    </div>
+    <p class="lede" id="debriefLede"></p>
+    <div class="charts">
+      <div class="panel"><div class="cap">Accuracy at each checkpoint</div><svg id="accChart" viewBox="0 0 520 280" role="img" aria-label="Accuracy at each checkpoint"></svg></div>
+      <div class="panel"><div class="cap">Memory sent with every answer (tokens)</div><svg id="tokChart" viewBox="0 0 520 280" role="img" aria-label="Tokens of memory per answer, by session"></svg>
+        <p class="note" id="tokNote"></p></div>
+    </div>
+    <div class="panel matrix"><div class="cap">Results by question type · all checkpoints · hover a square</div><svg id="matrix" viewBox="0 0 900 230" role="img" aria-label="Results by question type and contestant"></svg></div>
+    <div>
+      <div class="cap">What each one cost in this run</div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Strategy</th><th>Score</th><th>Memory at session 20</th><th>Upkeep (cheap model)</th><th>Answers</th><th>Stale</th><th>Forgetting</th></tr></thead>
+        <tbody id="costTable"></tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="cap">When to use which</div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Strategy</th><th>What it keeps</th><th>Good at</th><th>Fails at</th><th>Cost as history grows</th></tr></thead>
+        <tbody id="guide"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Memory Duel · a teaching tool, not a benchmark. Small samples; run it yourself before drawing conclusions.</span>
+    <span><a id="repoLink" href="https://github.com/ghelmstetter/memory-duel" target="_blank" rel="noopener">Source</a></span>
+  </footer>
+</div>
+<div class="tip" id="tip" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
