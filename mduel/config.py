@@ -32,6 +32,11 @@ PRICES = {
 # Stop a run if it spends more than this many dollars.
 MAX_RUN_DOLLARS = float(os.getenv("MDUEL_MAX_RUN_DOLLARS", "6.00"))
 
+# How many calls to each model run at once. Lower these if you see rate-limit waits or errors
+# (new Anthropic accounts have low per-minute limits); raise them on a higher usage tier.
+ANSWER_CONCURRENCY = int(os.getenv("MDUEL_ANSWER_CONCURRENCY", "2"))
+WORK_CONCURRENCY = int(os.getenv("MDUEL_WORK_CONCURRENCY", "4"))
+
 # Contestant settings.
 WINDOW_SESSIONS = int(os.getenv("MDUEL_WINDOW_SESSIONS", "3"))   # sliding window size, in sessions
 SUMMARY_WORDS = int(os.getenv("MDUEL_SUMMARY_WORDS", "200"))      # rolling summary cap

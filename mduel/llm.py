@@ -71,6 +71,45 @@ def _get_client():
         return _client
 
 
+# Accounts have per-minute limits on requests and tokens. Cap how many calls run at once per
+# model, and when a limit is hit anyway, wait and try again instead of failing the answer.
+_GATES = {}
+_GATES_LOCK = threading.Lock()
+
+
+def _gate(model):
+    with _GATES_LOCK:
+        if model not in _GATES:
+            n = config.ANSWER_CONCURRENCY if model == config.ANSWER_MODEL else config.WORK_CONCURRENCY
+            _GATES[model] = threading.Semaphore(max(1, n))
+        return _GATES[model]
+
+
+def _is_rate_limit(e):
+    name = e.__class__.__name__
+    status = getattr(e, "status_code", None)
+    return name in ("RateLimitError", "OverloadedError") or status in (429, 529)
+
+
+def _wait_for(e, attempt):
+    try:
+        ra = float(e.response.headers.get("retry-after"))  # seconds, when the API says how long
+    except Exception:
+        ra = 0
+    return max(ra, min(60, 10 * (attempt + 1)))
+
+
+def _create(client, **kw):
+    for attempt in range(8):
+        try:
+            with _gate(kw["model"]):
+                return client.messages.create(**kw)
+        except Exception as e:
+            if not _is_rate_limit(e) or attempt == 7:
+                raise
+            time.sleep(_wait_for(e, attempt))
+
+
 def _cache_path(key):
     d = config.CACHE_DIR / "llm" / key[:2]
     d.mkdir(parents=True, exist_ok=True)
@@ -100,8 +139,8 @@ def complete(system, user, *, model=None, max_tokens=1500, task="", meter=None):
             stop = "max_tokens" if tout >= limit else "end_turn"
         else:
             client = _get_client()
-            resp = client.messages.create(model=model, max_tokens=limit, system=system,
-                                          messages=[{"role": "user", "content": user}])
+            resp = _create(client, model=model, max_tokens=limit, system=system,
+                           messages=[{"role": "user", "content": user}])
             text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
             tin, tout = resp.usage.input_tokens, resp.usage.output_tokens
             stop = getattr(resp, "stop_reason", "") or ""

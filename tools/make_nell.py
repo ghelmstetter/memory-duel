@@ -149,7 +149,7 @@ Q = [
         5: ("What's my dog's name?", "Biscuit, a beagle."),
         10: ("What are my dogs' names?", "Biscuit and Pepper."),
         15: ("What are my dogs' names?", "Biscuit and Pepper."),
-        20: ("What are my dogs' names?", "Biscuit and Pepper.")}, "outdated": {10: ["Only Biscuit"], 15: ["Only Biscuit"], 20: ["Only Biscuit"]}},
+        20: ("What are my dogs' names?", "Biscuit and Pepper.")}, "outdated": {10: ["only Biscuit (no second dog)"], 15: ["only Biscuit (no second dog)"], 20: ["only Biscuit (no second dog)"]}},
     {"id": "birthday", "type": "recall", "key": "birthday", "ask": {
         cp: ("When is my birthday?", "March 14.") for cp in (5, 10, 15, 20)}},
     {"id": "work", "type": "recall", "key": "job", "ask": {5: ("Where do I work?", "At Lark Café, as a barista.")}},
@@ -175,7 +175,7 @@ Q = [
     {"id": "cat", "type": "false_memory", "key": None, "ask": {
         cp: ("What's my cat's name?", "Nell never mentioned a cat (she has dogs). A correct answer says it doesn't know of a cat.") for cp in (5, 10, 15, 20)}},
     {"id": "race", "type": "update", "key": "race", "ask": {
-        20: ("How did my half marathon go?", "She finished the Boise half marathon in 2:04.")}, "outdated": {20: ["It's coming up on May 9"]}},
+        20: ("How did my half marathon go?", "She finished the Boise half marathon in 2:04.")}, "outdated": {20: ["that the race hasn't happened yet"]}},
     {"id": "title", "type": "update", "key": "job", "ask": {
         20: ("What's my job title now?", "UX designer at Fernhill Studio (promoted from junior).")}, "outdated": {20: ["Junior UX designer", "barista"]}},
 ]

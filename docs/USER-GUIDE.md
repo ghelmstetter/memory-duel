@@ -70,6 +70,7 @@ The history lives in `tools/make_nell.py` as readable Python: the sessions, the 
 ## Troubleshooting
 
 - **"Claude rejected the API key."** Check `ANTHROPIC_API_KEY` in `.env`, then close the black window and run `run.bat` again.
+- **Rate limits.** New Anthropic accounts allow only so many tokens per minute, and the full transcript sends a lot. The app runs at most two answer calls at once and waits and retries when it hits a limit, so runs are slower but complete. If answers still fail, click **Retry failed answers** (answers that worked are reused for free), or lower `MDUEL_ANSWER_CONCURRENCY` in `.env` to 1.
 - **"Stopped: this run passed the budget."** Raise `MDUEL_MAX_RUN_DOLLARS` in `.env`, or run fewer contestants. Calls already made are cached, so the next run picks up where it stopped at no extra cost.
 - **The page looks stuck after a `git pull`.** Press Ctrl+F5 to reload it without the browser's cache.
 - **The RAG contestant uses word matching.** Install fastembed (`run.bat` tries automatically) for meaning-based search. The scripted demo always uses word matching, so it behaves as described.

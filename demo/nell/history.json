@@ -1718,7 +1718,7 @@
      "question": "What are my dogs' names?",
      "reference": "Biscuit and Pepper.",
      "outdated": [
-      "Only Biscuit"
+      "only Biscuit (no second dog)"
      ],
      "forbidden": []
     },
@@ -1790,7 +1790,7 @@
      "question": "What are my dogs' names?",
      "reference": "Biscuit and Pepper.",
      "outdated": [
-      "Only Biscuit"
+      "only Biscuit (no second dog)"
      ],
      "forbidden": []
     },
@@ -1876,7 +1876,7 @@
      "question": "What are my dogs' names?",
      "reference": "Biscuit and Pepper.",
      "outdated": [
-      "Only Biscuit"
+      "only Biscuit (no second dog)"
      ],
      "forbidden": []
     },
@@ -1957,7 +1957,7 @@
      "question": "How did my half marathon go?",
      "reference": "She finished the Boise half marathon in 2:04.",
      "outdated": [
-      "It's coming up on May 9"
+      "that the race hasn't happened yet"
      ],
      "forbidden": []
     },

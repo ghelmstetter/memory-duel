@@ -310,22 +310,29 @@ function renderRunPanel(){
   }
   if (!st.public && st.has_key && !runningJob) {
     const some = shown().length < ORDER.length ? ` (${shown().length} shown)` : '';
-    btns.push(`<button class="btn ${live ? 'ghost' : 'next'} small" id="runAll">${live ? `Run again with fresh calls${some}` : `Run it live${some}`}</button>`);
+    const failed = live ? ORDER.filter(c => { const e = R0.contestants && R0.contestants[c]; return e && Object.values(e.checkpoints).some(x => x.answers.some(a => a.error)); }) : [];
+    const nFailed = live ? ORDER.reduce((n, c) => { const e = R0.contestants && R0.contestants[c]; return n + (e ? Object.values(e.checkpoints).reduce((m, x) => m + x.answers.filter(a => a.error).length, 0) : 0); }, 0) : 0;
+    if (nFailed) btns.push(`<button class="btn next small" id="runFailed">Retry ${nFailed} failed answer${nFailed > 1 ? 's' : ''}</button>`);
+    if (live) btns.push(`<button class="btn ghost small" id="runReuse">Run again, reusing saved calls${some}</button>`);
+    btns.push(`<button class="btn ${live ? 'ghost' : 'next'} small" id="runAll">${live ? `Fresh calls${some}` : `Run it live${some}`}</button>`);
+    state.failedIds = failed;
     const we = entry('window');
     if (live && we && we.window && we.window !== state.W) btns.push(`<button class="btn next small" id="runWin">Run sliding window with ${state.W} session${state.W>1?'s':''}</button>`);
     if (live) btns.push(`<button class="btn ghost small" id="showDemo">Show the scripted demo</button>`);
   }
   $('#runBtns').innerHTML = btns.join('');
   $('#runAll')?.addEventListener('click', () => askConfirm(shown().length < ORDER.length ? shown() : null, live));
+  $('#runReuse')?.addEventListener('click', () => askConfirm(shown().length < ORDER.length ? shown() : null, false, 'reuse'));
+  $('#runFailed')?.addEventListener('click', () => askConfirm(state.failedIds, false, 'retry'));
   $('#runWin')?.addEventListener('click', () => askConfirm(['window'], false));
   $('#showDemo')?.addEventListener('click', async () => { await post(`/api/results/${H().slug}/clear`); await loadResults(); renderDuel(); });
   renderRunInfo();
 }
-async function askConfirm(only, fresh){
+async function askConfirm(only, fresh, kind){
   try {
     const qs = new URLSearchParams({window: state.W, ...(only ? {only: only.join(',')} : {})});
     const est = await api(`/api/estimate/${H().slug}?${qs}`);
-    state.confirm = {only, fresh, est};
+    state.confirm = {only, fresh, est, kind};
   } catch (e) { state.confirm = {error: e.message}; }
   renderRunInfo();
 }
@@ -342,7 +349,11 @@ function renderRunInfo(){
   if (c && c.error) { el.innerHTML = `<p class="err">${esc(c.error)}</p>`; return; }
   if (c) {
     const e = c.est;
-    el.innerHTML = `<div class="row" style="margin-top:12px"><span class="note" style="margin:0">${c.only ? c.only.map(cname).join(', ') : 'All six contestants'}: about <b>${usd(e.dollars)}</b> (answers ${usd(e.parts.answers)}, memory upkeep ${usd(e.parts.upkeep)}, grading ${usd(e.parts.grading)}). Every call is cached, so rerunning the same thing is free${c.fresh ? ', except with fresh calls' : ''}. Budget cap: ${usd(e.budget)}.</span>
+    const who = c.only ? c.only.map(cname).join(', ') : 'All six contestants';
+    const msg = c.kind === 'retry' || c.kind === 'reuse'
+      ? `${who}: calls that already worked are reused from the cache for free, so only the failed or changed ones are paid for. At most <b>${usd(e.dollars)}</b>, usually a small part of that.`
+      : `${who}: about <b>${usd(e.dollars)}</b> (answers ${usd(e.parts.answers)}, memory upkeep ${usd(e.parts.upkeep)}, grading ${usd(e.parts.grading)}).${c.fresh ? ' Fresh calls skip the cache.' : ' Calls are cached, so running the same thing again is free.'}`;
+    el.innerHTML = `<div class="row" style="margin-top:12px"><span class="note" style="margin:0">${msg} Budget cap: ${usd(e.budget)}.</span>
       <button class="btn next small" id="go">Start</button><button class="btn ghost small" id="cancel">Cancel</button></div>`;
     $('#go').onclick = () => startRun(c.only, c.fresh);
     $('#cancel').onclick = () => { state.confirm = null; renderRunInfo(); };

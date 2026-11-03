@@ -217,7 +217,7 @@ def _quiz(h, c, cid, t, states, answers_m, grading_m, prog):
             text, tin = answer(h, ctx, q["question"], t, answers_m)
         except Exception as e:
             return {"id": q["id"], "error": friendly_error(e)}
-        g = grading.judge(q, text, grading_m)
+        g = grading.judge(q, text, grading_m, h=h, t=t)
         if q["type"] == "forgetting" and g["grade"] == "right" and q.get("key") and states.get(q["key"], ["", None])[0] == "leak":
             g = {"grade": "stored", "why": "The answer declines, but the memory still holds what the user asked to forget."}
         prog["done"] += 1
@@ -244,8 +244,9 @@ def friendly_error(e):
         return "Claude rejected the API key. Check ANTHROPIC_API_KEY in your .env file."
     if "credit" in low or "billing" in low:
         return "Your Anthropic account is out of credit. Add credit in the Anthropic console."
-    if "rate" in low and "limit" in low:
-        return "Claude's rate limit was hit. Wait a minute and run it again."
+    if ("rate" in low and "limit" in low) or "429" in msg or "overloaded" in low:
+        return ("Claude's rate limit was still hit after several waits. Click \u201cRetry failed answers\u201d in a minute, "
+                "or lower MDUEL_ANSWER_CONCURRENCY in .env.")
     if isinstance(e, llm.BudgetExceeded):
         return msg
     if isinstance(e, llm.EmptyReply):
