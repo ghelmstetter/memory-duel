@@ -333,8 +333,8 @@ function renderRunInfo(){
   const el = $('#runInfo'), c = state.confirm, j = state.job;
   if (j && j.status === 'running') {
     const ids = j.contestants;
-    el.innerHTML = `<div class="note"><span class="spin"></span>Running · ${Math.round(j.elapsed||0)} s · ${usd(j.meter?.dollars ?? null)}</div>
-      <div class="prog">${ids.map(cid => { const p = j.progress[cid]; const pct = p.total ? 100*p.done/p.total : 0;
+    el.innerHTML = `<div class="note"><span class="spin"></span>Running · ${Math.round(j.elapsed||0)} s · the cost shows when it finishes. You can leave this page and come back.</div>
+      <div class="prog">${ids.map(cid => { const p = (j.progress || {})[cid] || {done: 0, total: 0, stage: 'starting…', error: null}; const pct = p.total ? 100*p.done/p.total : 0;
         return `<div class="p" style="--k:${color(cid)}"><div class="l"><b>${cname(cid)}</b><span>${p.error ? 'failed' : esc(p.stage)}</span></div><div class="bar"><i style="width:${pct}%"></i></div>${p.error?`<div class="err">${esc(p.error)}</div>`:''}</div>`; }).join('')}</div>`;
     return;
   }
@@ -355,6 +355,7 @@ async function startRun(only, fresh){
   try {
     const {job} = await post(`/api/run/${H().slug}`, {only, window: state.W, fresh});
     state.job = {id: job, status: 'running', contestants: only || ORDER, progress: {}, elapsed: 0};
+    try { localStorage.setItem('md-job', JSON.stringify({id: job, slug: H().slug})); } catch (e) {}
     renderRunPanel(); poll();
   } catch (e) { state.confirm = {error: e.message}; renderRunInfo(); }
 }
@@ -364,11 +365,25 @@ async function poll(){
     const j = await api(`/api/jobs/${state.job.id}`);
     state.job = j;
     if (j.status === 'running') { renderRunInfo(); setTimeout(poll, 1500); return; }
+    try { localStorage.removeItem('md-job'); } catch (e) {}
     const failed = j.contestants.filter(c => j.progress[c].error);
     j.done_note = `<p class="note">${j.status === 'done' ? 'Done' : 'Finished with problems'} in ${Math.round(j.elapsed)} s · cost ${usd(j.meter?.dollars)}${j.meter?.cached ? ` · ${j.meter.cached} calls came from the cache` : ''}.</p>` +
       failed.map(c => `<p class="err">${cname(c)}: ${esc(j.progress[c].error)}</p>`).join('');
     await loadResults(); renderDuel();
-  } catch (e) { state.job = null; state.confirm = {error: e.message}; renderRunInfo(); }
+  } catch (e) {
+    try { localStorage.removeItem('md-job'); } catch (err) {}
+    state.job = null; state.confirm = {error: e.message}; renderRunInfo();
+  }
+}
+// After a page refresh, pick up a run that's still going.
+async function resumeJob(){
+  let saved = null; try { saved = JSON.parse(localStorage.getItem('md-job') || 'null'); } catch (e) {}
+  if (!saved || saved.slug !== H().slug) return;
+  try {
+    const j = await api(`/api/jobs/${saved.id}`);
+    if (j.status === 'running') { state.job = j; poll(); }
+    else { localStorage.removeItem('md-job'); }
+  } catch (e) { try { localStorage.removeItem('md-job'); } catch (err) {} }
 }
 
 function renderCps(){ $('#cps').innerHTML = CPS().map(c => `<button aria-pressed="${c===state.cp}" data-cp="${c}">${c}</button>`).join(''); }
@@ -650,6 +665,7 @@ async function loadResults(){
     document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<p class="err">Couldn't load the app's data: ${esc(e.message)}. Is the server running?</p>`);
     return;
   }
+  await resumeJob();
   const h0 = location.hash.slice(1);
   go(STEPS.includes(h0) ? h0 : 'basics');
 })();
