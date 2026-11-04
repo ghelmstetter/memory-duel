@@ -24,6 +24,13 @@ sys.path.insert(0, str(ROOT))
 from mduel import datasets  # noqa: E402
 
 
+def count_lessons(db_path):
+    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    n = con.execute("SELECT COUNT(*) FROM lessons").fetchone()[0]
+    con.close()
+    return n
+
+
 def read_lessons(db_path, min_turns=4):
     con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
@@ -60,7 +67,9 @@ def main():
         sys.exit(f"Can't find {a.db}")
     sessions = read_lessons(a.db, a.min_turns)
     if not sessions:
-        sys.exit("No lessons with enough turns were found.")
+        total = count_lessons(a.db)
+        sys.exit(f"Found {total} lesson{'s' if total != 1 else ''}, but none with at least {a.min_turns} turns. "
+                 f"To include shorter ones, add --min-turns 1. (A useful memory test needs many lessons, ideally 10 or more.)")
     data = {"name": a.name, "user": a.user,
             "description": f"{len(sessions)} Hablemos voice lessons, imported from hablemos.db. Learner speech was transcribed automatically and may contain recognition errors.",
             "sessions": sessions}
