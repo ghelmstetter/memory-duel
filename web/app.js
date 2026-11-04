@@ -532,11 +532,12 @@ function renderMaps(upto = state.cp){
       <p class="how">${esc(how)}</p></div>`;
   }).join('');
 }
-bindTips($('#maps')); bindTips($('#mapLegend')); bindTips($('#gradeLegend')); bindTips($('#answers'));
+bindTips($('#maps')); bindTips($('#mapLegend')); bindTips($('#gradeLegend')); bindTips($('#matrixLegend')); bindTips($('#answers'));
+const gradeLegendHtml = () => OUT_ORDER.map(g => `<span data-tip="${OUT[g].l}|${esc(GRADE_HELP[g])}"><i style="background:${OUT[g].c}"></i>${OUT[g].l}</span>`).join('');
 function renderMapLegend(){
   const sw = st => st==='missing' ? `<i style="border:1px solid #5e7e6a"></i>` : st==='gone' ? `<i style="background:#0b1c13;box-shadow:inset 0 0 0 3.5px #0b1c13, inset 0 0 0 6px #7ee39a"></i>` : st==='na' ? `<i style="background:#0b1c13;border:1px solid #1e3d2d"></i>` : st==='conflict' ? `<i style="background:repeating-linear-gradient(45deg,#ffd95e 0 2px,rgba(255,217,94,.35) 2px 4px)"></i>` : `<i style="background:${ST[st].c}"></i>`;
   $('#mapLegend').innerHTML = ['current','stale','partial','conflict','missing','leak','gone','na'].map(s => `<span data-tip="${ST[s].l}|${esc(STATE_HELP[s])}">${sw(s)}${ST[s].l}</span>`).join('');
-  $('#gradeLegend').innerHTML = OUT_ORDER.map(g => `<span data-tip="${OUT[g].l}|${esc(GRADE_HELP[g])}"><i style="background:${OUT[g].c}"></i>${OUT[g].l}</span>`).join('');
+  $('#gradeLegend').innerHTML = gradeLegendHtml();
 }
 
 function renderScore(){
@@ -698,6 +699,7 @@ function renderDebrief(){
       (full && cheap.c !== 'full' ? `${cname(cheap.c)} sent the least (${cheap.tok.toLocaleString()}), about ${Math.max(1, Math.round(full.tok / Math.max(1, cheap.tok)))} times less than the full transcript, and scored ${Math.round(100*cheap.sc)}%. ` : '') +
       `Hover the squares to see which questions each one missed.`;
   }
+  $('#matrixLegend').innerHTML = gradeLegendHtml() + `<span data-tip="No answer|The call failed (for example, a rate limit) or this contestant wasn\u2019t run. Retry failed answers on the Duel step."><i style="background:#1e3d2d"></i>No answer</span>`;
   bindTips($('#matrix'));
 }
 
