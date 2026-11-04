@@ -1,6 +1,15 @@
 # Memory Duel
 
-**This app compares six memory strategies for AI chat, side by side:** full transcript, sliding window, rolling summary, fact memory, RAG over past chats, and self-editing memory. It's also a hands-on tutorial. A fictional user, Nell, chats with an assistant 20 times over five months while her life changes. Each memory strategy replays those chats and keeps whatever its strategy keeps. At four checkpoints the assistant is quizzed using only that memory, and a judge grades each answer against an exact answer key.
+**This app compares six memory strategies for AI chat, side by side:**
+
+- Full transcript
+- Sliding window
+- Rolling summary
+- Fact memory
+- RAG over past chats
+- Self-editing memory
+
+It's also a hands-on tutorial. A fictional user, Nell, chats with an assistant 20 times over five months while her life changes. Each memory strategy replays those chats and keeps whatever its strategy keeps. At four checkpoints the assistant is quizzed using only that memory, and a judge grades each answer against an exact answer key.
 
 It's built for learning, not production. Everything is small, visible and explained. It's the sequel to [Retrieval Duel](https://github.com/ghelmstetter/retrieval-duel).
 
