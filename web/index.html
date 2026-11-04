@@ -37,7 +37,9 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 a{color:var(--accent)}
 
 header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
-.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand{min-width:0}
+.brand .titlerow{display:flex;align-items:center;gap:clamp(10px,1.4vw,14px)}
+.mdlogo{display:block;flex:none}
 .brand h1{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.6vw,38px);letter-spacing:-.01em;margin:0;line-height:1}
 .brand h1 .a{color:#6ff0a8} .brand h1 .b{color:var(--accent)}
 .brand p{margin:7px 0 0;color:var(--muted);font-size:14px}
@@ -219,11 +221,11 @@ dialog.info dd{margin:0;font-size:14px;line-height:1.5}
 <div class="wrap">
   <header>
     <div class="brand">
-      <svg id="logo" width="48" height="48" role="img" aria-label="Memory Duel"></svg>
-      <div>
+      <div class="titlerow">
+        <svg id="logo" class="mdlogo" width="42" height="42" role="img" aria-label="Memory Duel"></svg>
         <h1><span class="a">Memory</span> <span class="b">Duel</span></h1>
-        <p>Which memory remembers what you told it, months of chats later?</p>
       </div>
+      <p>Which memory remembers what you told it, months of chats later?</p>
     </div>
     <div class="topright">
       <nav class="steps" aria-label="Steps">

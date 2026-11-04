@@ -145,18 +145,21 @@ function mark(text, words){
 
 // ================= logo =================
 function drawLogo(){
-  const svg = $('#logo'), W = 48;
+  const svg = $('#logo'), h1 = document.querySelector('.brand h1');
+  const W = Math.round(parseFloat(getComputedStyle(h1).fontSize) * 1.1);  // same proportion as Retrieval Duel's badge
   const ctx = document.createElement('canvas').getContext('2d');
   const m = t => { ctx.font = "700 100px 'Oswald', 'Arial Narrow', sans-serif"; const r = ctx.measureText(t); return {w:r.width, cap:r.actualBoundingBoxAscent||72}; };
   const sw = Math.max(1, W/30), pad = W*0.13, inner = W-2*pad, m1 = m('MEMORY'), m2 = m('DUEL');
   const fs1 = 100*inner/m1.w, fs2 = 100*inner/m2.w, c1 = m1.cap*fs1/100, c2 = m2.cap*fs2/100, gap = W*0.07;
   const y1 = (W-(c1+gap+c2))/2+c1, y2 = y1+gap+c2;
-  svg.setAttribute('viewBox', `0 0 ${W} ${W}`);
+  svg.setAttribute('viewBox', `0 0 ${W} ${W}`); svg.setAttribute('width', W); svg.setAttribute('height', W);
   svg.innerHTML = `<defs><linearGradient id="mdEdge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ff0a8"/><stop offset="1" stop-color="#ffa266"/></linearGradient></defs>
     <rect x="${sw/2}" y="${sw/2}" width="${W-sw}" height="${W-sw}" rx="${W*0.12}" fill="#08160f" stroke="url(#mdEdge)" stroke-width="${sw}"/>
     <text x="${pad}" y="${y1}" style="font-family:Oswald,'Arial Narrow',sans-serif;font-weight:700;font-size:${fs1}px" fill="#e8f3ec">MEMORY</text>
     <text x="${pad}" y="${y2}" style="font-family:Oswald,'Arial Narrow',sans-serif;font-weight:700;font-size:${fs2}px" fill="#e8f3ec">DUEL</text>`;
 }
+
+let logoTimer; window.addEventListener('resize', () => { clearTimeout(logoTimer); logoTimer = setTimeout(drawLogo, 150); });
 
 // ================= BASICS =================
 const T = (x,y,s,o={}) => `<text x="${x}" y="${y}" font-size="${o.fs||13}" fill="${o.fill||'#e8f3ec'}" ${o.anchor?`text-anchor="${o.anchor}"`:''} ${o.mono?'font-family="JetBrains Mono, monospace"':''} ${o.w?`font-weight="${o.w}"`:''}>${s}</text>`;
