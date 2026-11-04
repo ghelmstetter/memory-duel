@@ -505,6 +505,13 @@ function mapSvg(cid, upto){
     s += `<rect x="${L+(a-1)*cw}" y="${top-3}" width="${(t-a+1)*cw}" height="${bottom-top+3}" fill="none" stroke="#ff8f5a" stroke-width="1.5" rx="3"/>`; }
   return `<svg viewBox="0 0 ${W} ${bottom+2}" role="img" aria-label="${cname(cid)} memory map">${s}</svg>`;
 }
+function relTok(cid, tok, tokAt){
+  const full = state.shown.has('full') && entry('full') ? tokAt('full') : 0;
+  if (!full) return '';
+  if (cid === 'full') return 'the largest';
+  const p = 100*tok/full;
+  return `${p < 1 ? '<1' : Math.round(p)}% of full transcript`;
+}
 function renderMaps(upto = state.cp){
   const t = Math.min(upto, state.cp);
   const tokAt = cid => { const e = entry(cid); return e && e.timeline && e.timeline[t-1] ? e.timeline[t-1].tokens : 0; };
@@ -514,8 +521,10 @@ function renderMaps(upto = state.cp){
     const how = cid === 'window' ? `Sends only the last ${(e && e.window) || state.W} session${((e && e.window) || state.W) > 1 ? 's' : ''}.` : (INFO[cid]||{}).how;
     if (!e) return `<div class="map" style="--k:${color(cid)}"><div class="hd"><span>${cname(cid)}</span></div><p class="how">Not run yet.</p></div>`;
     return `<div class="map" style="--k:${color(cid)}">
-      <div class="hd"><span>${cname(cid)}${infoBtn(cid)}</span><span class="tok">${tok.toLocaleString()} tokens</span></div>
+      <div class="hd"><span>${cname(cid)}${infoBtn(cid)}</span></div>
+      <div class="toklab">Memory sent per answer</div>
       <div class="tokbar" title="Memory sent with each answer after session ${t}"><i style="width:${Math.max(1.5, 100*tok/mx)}%"></i></div>
+      <div class="tokmeta"><span><b>${tok.toLocaleString()}</b> tokens</span><span>${relTok(cid, tok, tokAt)}</span></div>
       ${mapSvg(cid, upto)}
       <p class="how">${esc(how)}</p></div>`;
   }).join('');
