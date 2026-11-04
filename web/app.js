@@ -13,7 +13,7 @@ let INFO = {};
 
 const OUT = {
   right:{c:'#7ee39a', l:'Right'}, partly:{c:'#ffd95e', l:'Partly'}, stored:{c:'#ff8a8a', l:'Still stored'},
-  stale:{c:'#ffb347', l:'Stale'}, missed:{c:'#8fb09c', l:'Missed'}, invented:{c:'#c4b0ff', l:'Invented'},
+  stale:{c:'#ffb347', l:'Stale'}, missed:{c:'#ff7a3d', l:'Missed'}, invented:{c:'#c4b0ff', l:'Invented'},
   wrong:{c:'#ff6b6b', l:'Wrong'}, leaked:{c:'#ff4d4d', l:'Leaked'},
 };
 const OUT_ORDER = ['right','partly','stored','stale','missed','invented','wrong','leaked'];
@@ -426,7 +426,7 @@ function mapSvg(cid, upto){
       const tipTxt = `${esc(f.label)} after s${t}|${sd.l}${v ? ': ' + esc(v) : ''}`;
       let shape;
       if (stt === 'na') shape = `<rect x="${x+.8}" y="${y+1}" width="${cw-1.6}" height="${rh-4}" rx="2" fill="#0b1c13"/>`;
-      else if (stt === 'missing') shape = `<rect x="${x+1.3}" y="${y+1.5}" width="${cw-2.6}" height="${rh-5}" rx="2" fill="none" stroke="#5e7e6a" stroke-dasharray="2 2"/>`;
+      else if (stt === 'missing') shape = `<rect x="${x+1.3}" y="${y+1.5}" width="${cw-2.6}" height="${rh-5}" rx="2" fill="none" stroke="#5e7e6a"/>`;
       else if (stt === 'gone') shape = `<rect x="${x+.8}" y="${y+1}" width="${cw-1.6}" height="${rh-4}" rx="2" fill="#0b1c13"/><circle cx="${x+cw/2}" cy="${y+rh/2-1}" r="1.8" fill="#7ee39a"/>`;
       else shape = `<rect x="${x+.8}" y="${y+1}" width="${cw-1.6}" height="${rh-4}" rx="2" fill="${sd.hatch ? `url(#hatch-${cid})` : sd.c}" opacity="${stt==='current'?.85:1}"/>`;
       s += `<g data-tip="${tipTxt}">${shape}</g>`;
@@ -455,19 +455,20 @@ function renderMaps(upto = state.cp){
 }
 bindTips($('#maps'));
 function renderMapLegend(){
-  const sw = st => st==='missing' ? `<i style="border:1px dashed #5e7e6a"></i>` : st==='gone' ? `<i style="background:#0b1c13;box-shadow:inset 0 0 0 3.5px #0b1c13, inset 0 0 0 6px #7ee39a"></i>` : st==='na' ? `<i style="background:#0b1c13;border:1px solid #1e3d2d"></i>` : st==='conflict' ? `<i style="background:repeating-linear-gradient(45deg,#ffd95e 0 2px,rgba(255,217,94,.35) 2px 4px)"></i>` : `<i style="background:${ST[st].c}"></i>`;
+  const sw = st => st==='missing' ? `<i style="border:1px solid #5e7e6a"></i>` : st==='gone' ? `<i style="background:#0b1c13;box-shadow:inset 0 0 0 3.5px #0b1c13, inset 0 0 0 6px #7ee39a"></i>` : st==='na' ? `<i style="background:#0b1c13;border:1px solid #1e3d2d"></i>` : st==='conflict' ? `<i style="background:repeating-linear-gradient(45deg,#ffd95e 0 2px,rgba(255,217,94,.35) 2px 4px)"></i>` : `<i style="background:${ST[st].c}"></i>`;
   $('#mapLegend').innerHTML = ['current','stale','partial','conflict','missing','leak','gone','na'].map(s => `<span>${sw(s)}${ST[s].l}</span>`).join('');
 }
 
 function renderScore(){
   $('#scoreCap').textContent = `Score after session ${state.cp} · ${qsAt(state.cp).length} questions · right = 1, partly = ½`;
+  const best = Math.max(...shown().map(c => scoreOf(c, state.cp) ?? -1));
   $('#score').innerHTML = shown().map(cid => {
     const qs = qsAt(state.cp), counts = {}; let n = 0;
     qs.forEach(q => { const a = answerOf(cid, state.cp, q.id); if (a && a.grade) { counts[a.grade] = (counts[a.grade]||0)+1; n++; } });
     const sc = scoreOf(cid, state.cp);
     const bar = OUT_ORDER.filter(o => counts[o]).map(o => `<i style="width:${100*counts[o]/n}%;background:${OUT[o].c}" title="${OUT[o].l}: ${counts[o]}"></i>`).join('');
     const parts = OUT_ORDER.filter(o => counts[o]).map(o => `${counts[o]} ${OUT[o].l.toLowerCase()}`).join(' · ');
-    return `<div class="sc" style="--k:${color(cid)}"><div class="lab"><b>${cname(cid)}</b><span>${sc == null ? '–' : Math.round(100*sc) + '%'}</span></div><div class="bar">${bar}</div><div class="lab"><span>${parts || 'no results'}</span></div></div>`;
+    return `<div class="sc" style="--k:${color(cid)}"><div class="lab"><b>${cname(cid)}</b>${sc == null ? '<span>–</span>' : sc === best && best > 0 ? `<span class="win">Winner: ${Math.round(100*sc)}%</span>` : `<span>${Math.round(100*sc)}%</span>`}</div><div class="bar">${bar}</div><div class="lab"><span>${parts || 'no results'}</span></div></div>`;
   }).join('');
 }
 function renderQdeck(){
