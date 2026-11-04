@@ -53,9 +53,10 @@ nav.steps button[aria-current="step"]{color:var(--fg);border-color:var(--fg);bac
 nav.steps button[aria-current="step"] .n{background:var(--fg);color:var(--ink);border-color:var(--fg)}
 
 .step{display:flex;flex-direction:column;gap:16px}
-.banner{display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,179,71,.45);border-left:4px solid var(--stale);background:rgba(255,179,71,.07);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--fg)}
-.banner .bi{flex:none;width:20px;height:20px;border-radius:50%;background:var(--stale);color:var(--ink);font-weight:800;display:grid;place-items:center;font-size:13px;margin-top:1px}
-.banner b{font-weight:700}
+.banner{display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,179,71,.55);border-left:4px solid var(--stale);background:#2e2a17;border-radius:10px;padding:11px 16px;font-size:14px;color:#f3ead6}
+.banner .bi{flex:none;width:20px;height:20px;border-radius:50%;background:var(--stale);color:var(--ink);font:800 13px/1 Georgia,serif;font-style:italic;display:grid;place-items:center;margin-top:1px}
+.banner b{font-weight:700;color:#fff6e3}
+.banner a{color:#f3ead6;text-decoration:underline;text-underline-offset:2px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
 h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
 h3{font-size:15px;margin:0;font-weight:700}
@@ -269,8 +270,8 @@ dialog.info dd{margin:0;font-size:14px;line-height:1.5}
   </header>
 
   <div class="banner" id="demoBanner" hidden role="note">
-    <span class="bi" aria-hidden="true">!</span>
-    <span><b>This is the hosted demo.</b> It shows Nell's saved results only. To test your own chat history (including a ChatGPT or Claude export) and run the strategies live with your own API key, <a id="bannerLink" href="https://github.com/ghelmstetter/memory-duel" target="_blank" rel="noopener">install Memory Duel on your computer</a>.</span>
+    <span class="bi" aria-hidden="true">i</span>
+    <span><b>Hosted demo:</b> You're seeing Nell's saved results. To test your own chat history (including a ChatGPT or Claude export) and run the strategies live, <a id="bannerLink" href="https://github.com/ghelmstetter/memory-duel" target="_blank" rel="noopener">run the full version yourself</a> with your own API key.</span>
   </div>
 
   <!-- 1 BASICS -->
