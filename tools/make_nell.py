@@ -210,7 +210,7 @@ def main():
         "name": "Nell's chats",
         "user": "Nell",
         "description": "A fictional user, Nell, chats with an assistant 20 times between January and May 2026. "
-                       "She gets a second dog, changes jobs, moves from Denver to Boise, corrects her allergy, "
+                       "She gets a second dog, changes jobs, moves from Denver to Boise, corrects her allergy information, "
                        "and asks the assistant to forget her old address.",
         "sessions": sessions,
         "facts": FACTS,
