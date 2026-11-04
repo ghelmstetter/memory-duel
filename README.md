@@ -1,5 +1,7 @@
 # Memory Duel
 
+**Try the demo:** https://memory-duel.vercel.app (nothing to install, no API key). The hosted demo shows Nell's chats with saved sample results. To run the strategies live, or on your own chat history, run it on your computer (see [Quick start](#quick-start-windows)).
+
 **This app compares six memory strategies for AI chat, side by side:**
 
 - Full transcript
