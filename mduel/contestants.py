@@ -111,7 +111,7 @@ Reply with ONLY JSON: {"add": ["new facts"], "retire": [ids of facts now outdate
 
 
 class Facts(Contestant):
-    """Mirrors the add/retire design many chat apps use (including Hablemos's consolidator)."""
+    """Mirrors the add/retire design many chat apps use."""
     id = "facts"
 
     def __init__(self, history, window=None):

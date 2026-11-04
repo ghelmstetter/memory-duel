@@ -65,7 +65,7 @@ To make your live results the demo's saved results: `python tools/build_demo.py 
 
 ## Your own chat history
 
-On the History step, **+ Add a history** imports a JSON file of your chats: a list of sessions, each with an optional date and topic, and its turns (`{"role": "user" | "assistant", "text": "..."}`). From the command line, `tools/import_history.py` also reads a **ChatGPT export** or a **Claude export** (`conversations.json`), or a database from Hablemos (the author's Spanish-tutor app), detecting the format by itself:
+On the History step, **+ Add a history** imports a JSON file of your chats: a list of sessions, each with an optional date and topic, and its turns (`{"role": "user" | "assistant", "text": "..."}`). From the command line, `tools/import_history.py` also reads a **ChatGPT export** or a **Claude export** (`conversations.json`), detecting the format by itself:
 
 ```
 .venv\Scripts\python tools\import_history.py path\to\conversations.json --user "Your name"
@@ -114,7 +114,7 @@ web/                the page (HTML, CSS, plain JS and SVG)
 demo/nell/          the demo history (history.json) and its saved results (results.json)
 tools/make_nell.py  writes the demo history from readable Python
 tools/build_demo.py builds the saved demo results
-tools/import_history.py   imports ChatGPT or Claude exports, Hablemos lessons, or a chat file
+tools/import_history.py   imports ChatGPT or Claude exports, or a chat file
 docs/USER-GUIDE.md  full walkthrough
 run.bat             one-click setup and start for Windows
 api/index.py        Vercel entry point (public demo mode)
@@ -124,7 +124,6 @@ tests/              offline tests (python -m tests.test_offline)
 ## Ideas for later
 
 - Import samples of LongMemEval and LoCoMo.
-- Hablemos's own memory code as a seventh contestant.
 - A second track for agents: a long task interrupted after each step and resumed by a fresh session (no memory, compaction, a notes file, notes plus progress files).
 - Prompt caching for the long-context contestants, to show how it changes the cost picture.
 - A replay tool for apps with their own memory code, so the app's real memory logic can run as a contestant.

@@ -47,7 +47,7 @@ const STRAT = {
     good: 'Current facts, cheaply. Easy to show the user, edit and delete, which makes privacy controls simple.',
     bad: 'Retiring a fact throws away its history (the old job is gone). If it forgets to retire one, facts contradict each other. Details it judges minor never get saved.',
     cost: 'A few hundred tokens per answer, plus one cheap update per session.',
-    seen: 'The memory features of chat assistants that save facts about you. Hablemos\u2019s memory update uses this add-and-retire pattern.'},
+    seen: 'The memory features of chat assistants that save facts about you; the memory update in many companion and tutor apps.'},
   rag: {lead: 'Stores every past message in a search index. For each question, it finds the few closest messages (4 here) and sends only those.',
     keeps: 'Everything, searchable.',
     good: 'Scales to years of history at a flat cost per answer, and can find a specific old detail.',
