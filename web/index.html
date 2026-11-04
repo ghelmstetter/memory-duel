@@ -102,6 +102,33 @@ svg text{font-family:var(--body)}
 .ev.upd{border-color:rgba(255,179,71,.6);color:#ffd9a8}
 .ev.del{border-color:rgba(255,107,107,.6);color:#ffc0c0}
 .log svg{display:block;width:100%;height:auto}
+.dslist{display:flex;flex-wrap:wrap;gap:8px}
+.dschip{border:1px solid var(--line2);background:transparent;border-radius:10px;padding:7px 12px;text-align:left;display:flex;flex-direction:column;gap:1px;min-width:0}
+.dschip b{font-size:14px}
+.dschip span{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+.dschip[aria-pressed="true"]{border-color:var(--accent);background:#1b2a1a}
+.dschip.add{border-style:dashed;color:var(--muted);justify-content:center}
+.addform{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.addform label,.ke label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;color:var(--fg);background:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:7px 9px;min-width:0}
+input[type=file]{padding:5px}
+input[type=checkbox]{accent-color:var(--accent)}
+code{font-family:var(--mono);font-size:12px;color:var(--fg);background:var(--ink);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+#keyTools{margin-bottom:10px}
+#keyTools .row{gap:8px}
+.keyempty{border:1px dashed var(--line2);border-radius:10px;padding:14px;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:10px}
+.ke{display:flex;flex-direction:column;gap:14px}
+.ke h3{font-family:var(--display);font-size:15px}
+.ke .kf,.ke .kq{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--ink)}
+.ke .kfh,.ke .kv,.ke .kqh{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ke .kv input.v-s{width:76px}
+.ke .kv input.v-v{flex:1 1 220px}
+.ke .mono{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.ke .x{background:transparent;border:1px solid var(--line2);border-radius:7px;color:var(--muted);padding:3px 9px;font-size:12.5px}
+.ke .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.ke .cpbox{display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--accent);padding-left:12px}
+.ke .unused{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-width:760px){.addform,.ke .grid2{grid-template-columns:minmax(0,1fr)}}
 
 /* duel */
 .runbar{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between}
@@ -257,15 +284,30 @@ dialog.info dd{margin:0;font-size:14px;line-height:1.5}
       <h2 id="histTitle">Meet Nell</h2>
     </div>
     <p class="lede" id="histLede"></p>
+    <div class="panel">
+      <div class="cap">Chat histories</div>
+      <div class="dslist" id="dsList"></div>
+      <div id="addPanel" hidden>
+        <div class="addform">
+          <label>Name<input id="addName" value="My history"></label>
+          <label>Your name, as the assistant would say it<input id="addUser" placeholder="e.g. Greg"></label>
+          <label>Chat file (.json)<input type="file" id="addFile" accept=".json,application/json"></label>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn next small" id="addGo">Import</button><button class="btn ghost small" id="addCancel">Cancel</button><span class="err" id="addErr"></span></div>
+        <p class="note">The file is a list of sessions, each with a date, a topic and its turns: <code>[{"date": "2026-10-20", "topic": "…", "turns": [{"role": "user", "text": "…"}, {"role": "assistant", "text": "…"}]}]</code>. For Hablemos, run this in the memory-duel folder instead: <code>.venv\Scripts\python tools\import_hablemos.py "path\to\hablemos\data\hablemos.db" --user "Your name"</code>, then refresh this page. Nothing leaves your computer until you draft an answer key or run the duel; then the chats are sent to the Anthropic API.</p>
+      </div>
+    </div>
     <div class="panel track"><div class="cap">Sessions · circle size shows length · ◆ marks a checkpoint quiz</div><svg id="track" viewBox="0 0 1000 96" role="img" aria-label="Timeline of sessions"></svg></div>
     <div class="hist">
       <div class="panel" id="sess"></div>
       <div class="panel log">
         <div class="cap">Answer key · what was true, session by session</div>
+        <div id="keyTools"></div>
         <svg id="log" viewBox="0 0 560 330" role="img" aria-label="Facts over the sessions"></svg>
         <p class="note">Built from an event log, not from prose: every fact has a value and the session where it became true. That gives an exact right answer at any point in time, and the quiz questions come straight from it.</p>
       </div>
     </div>
+    <div class="panel" id="keyEditor" hidden></div>
     <div class="row"><button class="btn next" data-go="duel">Next: run the duel →</button></div>
   </section>
 

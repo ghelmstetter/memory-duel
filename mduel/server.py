@@ -5,7 +5,7 @@ from starlette.responses import FileResponse, JSONResponse
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from . import config, pipeline
+from . import config, datasets, pipeline
 from .contestants import INFO, ORDER
 from .history import History
 
@@ -100,7 +100,54 @@ async def clear(request):
     return ok({"cleared": True})
 
 
+@guarded
+async def import_history(request):
+    _local_only()
+    body = await request.json()
+    out = await run_in_threadpool(datasets.create, body.get("name"), body.get("data"), body.get("user"))
+    return ok(out)
+
+
+@guarded
+async def delete_history(request):
+    _local_only()
+    datasets.delete(request.path_params["slug"])
+    return ok({"deleted": True})
+
+
+@guarded
+async def save_key(request):
+    _local_only()
+    body = await request.json()
+    return ok(datasets.save_key(request.path_params["slug"], body.get("facts") or [], body.get("checkpoints") or [],
+                                body.get("user"), body.get("name"), reviewed=True))
+
+
+@guarded
+async def draft_estimate(request):
+    return ok(datasets.draft_estimate(request.path_params["slug"]))
+
+
+@guarded
+async def draft(request):
+    _local_only()
+    body = await request.json()
+    job = await run_in_threadpool(datasets.start_draft, request.path_params["slug"], bool(body.get("fresh")))
+    return ok({"job": job["id"]})
+
+
+@guarded
+async def draft_job(request):
+    return ok(datasets.draft_status(request.path_params["id"]))
+
+
 routes = [
+    Route("/api/import", import_history, methods=["POST"]),
+    Route("/api/history/{slug}/delete", delete_history, methods=["POST"]),
+    Route("/api/history/{slug}/key", save_key, methods=["POST"]),
+    Route("/api/draft/{slug}/estimate", draft_estimate),
+    Route("/api/draft/{slug}", draft, methods=["POST"]),
+    Route("/api/draft-jobs/{id}", draft_job),
     Route("/", index),
     Route("/api/status", status),
     Route("/api/histories", histories),

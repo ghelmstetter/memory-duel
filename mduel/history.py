@@ -48,6 +48,10 @@ class History:
     def session_tokens(self):
         return [approx_tokens(self.session_text(i)) for i in range(1, self.n + 1)]
 
+    @property
+    def editable(self):
+        return (config.DATASETS_DIR / self.slug / "history.json").exists()
+
     def truth_at(self, key, t):
         """(known, value) after session t. value None means forgotten on request."""
         known, val = False, None
@@ -83,8 +87,8 @@ class History:
         return [c["after"] for c in self.checkpoints]
 
     def date_after(self, t):
-        return self.sessions[min(t, self.n) - 1]["date"]
+        return self.sessions[min(t, self.n) - 1].get("date") or ""
 
     def public(self):
         """What the page needs: the history plus token counts."""
-        return {**self.data, "slug": self.slug, "session_tokens": self.session_tokens}
+        return {**self.data, "slug": self.slug, "session_tokens": self.session_tokens, "editable": self.editable}

@@ -144,7 +144,8 @@ def judge(q, answer_text, meter=None, h=None, t=None):
         return {"grade": "leaked", "why": "It repeated something the user asked it to forget."}
     ctx = ""
     if h is not None and t is not None:
-        ctx = f"Date of this conversation: {h.date_after(t)}\nTrue facts about the user at this point:\n{true_facts(h, t)}\n\n"
+        when = f"Date of this conversation: {h.date_after(t)}\n" if h.date_after(t) else f"This conversation is after session {t}.\n"
+        ctx = f"{when}True facts about the user at this point:\n{true_facts(h, t)}\n\n"
     user = (ctx + f"Question: {q['question']}\nReference answer: {q['reference']}\n"
             + (f"Outdated values (stale if given as current): {'; '.join(q['outdated'])}\n" if q.get("outdated") else "")
             + f"Answer to grade: {answer_text}")

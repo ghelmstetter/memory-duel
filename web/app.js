@@ -308,21 +308,22 @@ function eventsOf(n){
   return evs;
 }
 function renderTrack(){
-  const W = 1000, n = N(), x = i => 40 + (W-80)*(i-1)/(n-1), toks = H().session_tokens, mx = Math.max(...toks);
+  const W = 1000, n = N(), x = i => 40 + (W-80)*(i-1)/Math.max(1, n-1), toks = H().session_tokens, mx = Math.max(...toks);
   let s = `<line x1="${x(1)}" y1="44" x2="${x(n)}" y2="44" stroke="#2a5139" stroke-width="2"/>`;
   for (let i = 1; i <= n; i++) {
     const on = i === state.sess, ses = H().sessions[i-1], has = eventsOf(i).length;
-    const r = 8 + 8*Math.sqrt(toks[i-1]/mx);
+    const big = n <= 30, r = big ? 8 + 8*Math.sqrt(toks[i-1]/mx) : 3 + 4*Math.sqrt(toks[i-1]/mx);
+    const every = Math.ceil(n/14), showDate = n <= 20 || (i-1) % every === 0;
     s += `<g class="node" data-s="${i}" tabindex="0" role="button" aria-label="Session ${i}, ${ses.date}: ${esc(ses.topic)}">
       <circle cx="${x(i)}" cy="44" r="${r+5}" fill="transparent"/>
       <circle cx="${x(i)}" cy="44" r="${r}" fill="${on?'#ffa266':has?'#12291e':'#0e2118'}" stroke="${on?'#ffa266':has?'#93b4a0':'#2a5139'}" stroke-width="${on?2:1.5}"/>
-      <text x="${x(i)}" y="48" text-anchor="middle" font-size="10.5" font-family="JetBrains Mono, monospace" fill="${on?'#08160f':'#e8f3ec'}">${i}</text>
-      <text x="${x(i)}" y="86" text-anchor="middle" font-size="10.5" fill="#5e7e6a">${shortDate(ses.date)}</text></g>`;
+      ${big ? `<text x="${x(i)}" y="48" text-anchor="middle" font-size="10.5" font-family="JetBrains Mono, monospace" fill="${on?'#08160f':'#e8f3ec'}">${i}</text>` : ''}
+      ${showDate ? `<text x="${x(i)}" y="86" text-anchor="middle" font-size="10.5" fill="#5e7e6a">${shortDate(ses.date) || 's' + i}</text>` : ''}</g>`;
     if (CPS().includes(i)) s += `<path d="M${x(i) + (x(2)-x(1))/2} 12 l6 6 l-6 6 l-6 -6 z" fill="#ffa266"/>`;
   }
   $('#track').innerHTML = s;
 }
-function shortDate(d){ const [y,m,dd] = d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ' ' + (+dd); }
+function shortDate(d){ if (!d || !/^\d{4}-\d{2}-\d{2}/.test(d)) return ''; const [y,m,dd] = d.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1] + ' ' + (+dd); }
 $('#track').addEventListener('click', e => { const g = e.target.closest('.node'); if (g) { state.sess = +g.dataset.s; renderHistory(); } });
 $('#track').addEventListener('keydown', e => { const g = e.target.closest('.node'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); state.sess = +g.dataset.s; renderHistory(); document.querySelector(`.node[data-s="${state.sess}"]`)?.focus(); } });
 
@@ -330,14 +331,15 @@ function renderSession(){
   const i = state.sess, s = H().sessions[i-1], evs = eventsOf(i);
   const words = [];
   H().facts.forEach(f => { const m = (f.mentions||{})[String(i)]; if (m) String(m).toLowerCase().match(/[a-z0-9:]+/g).forEach(w => { if (w.length > 3) words.push(w); }); });
-  $('#sess').innerHTML = `<div class="sess-head"><h3>Session ${i} · ${esc(s.topic)}</h3><span class="meta">${shortDate(s.date)} · ${s.turns.length} messages · ${H().session_tokens[i-1].toLocaleString()} tokens</span></div>
+  $('#sess').innerHTML = `<div class="sess-head"><h3>Session ${i} · ${esc(s.topic)}</h3><span class="meta">${shortDate(s.date) ? shortDate(s.date) + ' · ' : ''}${s.turns.length} messages · ${H().session_tokens[i-1].toLocaleString()} tokens</span></div>
     <div class="evs">${evs.length ? evs.map(([k,t]) => `<span class="ev ${k}">${k==='new'?'+':k==='upd'?'↻':'✕'} ${esc(t)}</span>`).join('') : '<span class="ev">no change to the facts in the answer key</span>'}</div>
     <div class="chat">${s.turns.map(t => `<div class="bub ${t.role}"><span class="who">${t.role==='user'?esc(H().user):'Assistant'}</span>${mark(t.text, words)}</div>`).join('')}</div>`;
 }
 function renderLog(){
   const W = 560, L = 104, R0 = 12, top = 26, rh = 31, n = N(), x = s => L + (W-L-R0)*(s-1)/n, cw = (W-L-R0)/n;
   let s = '';
-  for (let i = 1; i <= n; i++) if (i === 1 || i % 5 === 0) s += `<text x="${x(i)+cw/2}" y="14" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="#5e7e6a">s${i}</text>`;
+  const lstep = n <= 25 ? 5 : n <= 60 ? 10 : 20;
+  for (let i = 1; i <= n; i++) if (i === 1 || i % lstep === 0) s += `<text x="${x(i)+cw/2}" y="14" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="#5e7e6a">s${i}</text>`;
   H().facts.forEach((f, r) => {
     const y = top + r*rh;
     s += `<text x="0" y="${y+18}" font-size="12" fill="#93b4a0">${esc(f.label)}</text>`;
@@ -358,10 +360,180 @@ function renderLog(){
 }
 bindTips($('#log'));
 function renderHistory(){
-  $('#histTitle').textContent = `Meet ${H().user}: ${N()} chats over five months`;
-  $('#histLede').textContent = H().description + ` Pick a session to read it. The chart is the answer key: what was true about ${H().user} after each session.`;
-  renderTrack(); renderSession(); renderLog();
+  const demo = H().slug === 'nell';
+  $('#histTitle').textContent = demo ? `Meet ${H().user}: ${N()} chats over five months` : `${H().name}: ${N()} sessions`;
+  $('#histLede').textContent = H().description + (H().facts.length ? ` Pick a session to read it. The chart is the answer key: what was true about ${demo ? H().user : 'the user'} after each session.` : ' Pick a session to read it.');
+  if (state.sess > N()) state.sess = 1;
+  renderDsBar(); renderTrack(); renderSession(); renderLog(); renderKeyTools();
+  if (state.editing) renderEditor(); else $('#keyEditor').hidden = true;
 }
+
+// ---------- histories: picker, import, delete ----------
+function renderDsBar(){
+  const canAdd = !state.status.public;
+  $('#dsList').innerHTML = (state.list || []).map(d => `<button class="dschip" aria-pressed="${d.slug === H().slug}" data-slug="${esc(d.slug)}"><b>${esc(d.name)}</b><span>${d.sessions} sessions · ${d.kind === 'demo' ? 'demo' : 'yours'}${d.has_live ? ' · live results' : ''}</span></button>`).join('') +
+    (canAdd ? `<button class="dschip add" id="addOpen">+ Add a history</button>` : '');
+  $('#addOpen')?.addEventListener('click', () => { $('#addPanel').hidden = !$('#addPanel').hidden; });
+}
+$('#dsList').addEventListener('click', e => { const b = e.target.closest('.dschip[data-slug]'); if (b && b.dataset.slug !== H().slug) selectHistory(b.dataset.slug); });
+$('#addCancel').onclick = () => { $('#addPanel').hidden = true; $('#addErr').textContent = ''; };
+$('#addGo').onclick = async () => {
+  const f = $('#addFile').files[0];
+  $('#addErr').textContent = '';
+  if (!f) { $('#addErr').textContent = 'Choose a file first.'; return; }
+  try {
+    const text = await f.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) { data = text.split(/\r?\n/).filter(l => l.trim()).map(l => JSON.parse(l)); }  // JSON Lines: one session per line
+    const r = await post('/api/import', {name: $('#addName').value.trim() || f.name.replace(/\.\w+$/, ''), user: $('#addUser').value.trim() || null, data});
+    $('#addPanel').hidden = true;
+    state.list = await api('/api/histories');
+    await selectHistory(r.slug);
+  } catch (e) { $('#addErr').textContent = e.message.includes('JSON') ? 'That file isn\u2019t valid JSON.' : e.message; }
+};
+async function selectHistory(slug){
+  stopAnim(); state.editing = false; state.draft = null;
+  state.hist = await api(`/api/history/${slug}`);
+  try { localStorage.setItem('md-hist', slug); } catch (e) {}
+  state.sess = slug === 'nell' ? 11 : 1;
+  state.cp = CPS().length ? CPS()[CPS().length-1] : null;
+  state.q = CPS().length ? (qsAt(state.cp)[0] || {}).id : null;
+  await loadResults();
+  go(state.step);
+}
+
+// ---------- answer key: draft with Claude, edit, save ----------
+function renderKeyTools(){
+  const el = $('#keyTools'), h = H(), st = state.status, d = state.draft;
+  $('#log').style.display = h.facts.length ? '' : 'none';
+  if (d && d.status === 'running') {
+    const pct = d.total ? 100*d.done/d.total : 0;
+    el.innerHTML = `<div class="keyempty"><span><span class="spin"></span>Drafting the answer key · ${esc(d.stage || 'starting…')} · ${Math.round(d.elapsed||0)} s</span><div class="tokbar" style="--k:var(--accent)"><i style="width:${pct}%"></i></div></div>`;
+    return;
+  }
+  const err = d && d.error ? `<p class="err">${esc(d.error)}</p>` : '';
+  if (!h.facts.length) {
+    if (!h.editable) { el.innerHTML = '<div class="keyempty">This history has no answer key.</div>'; return; }
+    const c = state.draftConfirm;
+    el.innerHTML = `<div class="keyempty"><span><b style="color:var(--fg)">No answer key yet.</b> Claude can read every session and draft one: the facts about you, the session where each became true or changed, and quiz questions at four checkpoints. Then you review and fix it here, since only you know what's true.</span>
+      ${!st.has_key ? '<span>Drafting needs an API key in .env.</span>' : c ? `<div class="row"><span class="note" style="margin:0">Reads ${c.sessions} sessions with ${esc(c.model)}: about <b>${usd(c.dollars)}</b>.</span><button class="btn next small" id="draftGo">Start</button><button class="btn ghost small" id="draftCancel">Cancel</button></div>` : `<div class="row"><button class="btn next small" id="draftAsk">Draft the answer key with Claude</button>${deleteBtn()}</div>`}${err}</div>`;
+  } else {
+    el.innerHTML = h.editable ? `<div class="row">${state.editing ? '' : '<button class="btn ghost small" id="editKey">Review and edit the answer key</button>'}${deleteBtn()}</div>${h.key_drafted && !h.key_reviewed ? '<p class="note">Drafted by Claude. Review it before trusting the scores: check each fact and question against what you know is true.</p>' : ''}${err}` : '';
+  }
+  $('#draftAsk')?.addEventListener('click', async () => { try { state.draftConfirm = await api(`/api/draft/${h.slug}/estimate`); } catch (e) { state.draft = {error: e.message}; } renderKeyTools(); });
+  $('#draftCancel')?.addEventListener('click', () => { state.draftConfirm = null; renderKeyTools(); });
+  $('#draftGo')?.addEventListener('click', startDraft);
+  $('#editKey')?.addEventListener('click', () => { state.editing = true; state.edit = null; renderHistory(); $('#keyEditor').scrollIntoView({behavior: 'smooth', block: 'start'}); });
+  bindDelete();
+}
+function deleteBtn(){
+  if (!H().editable) return '';
+  return state.confirmDelete ? `<span class="note" style="margin:0">Delete this history and its results?</span><button class="btn small" id="delYes" style="background:#ff6b6b">Delete</button><button class="btn ghost small" id="delNo">Keep it</button>`
+    : `<button class="btn ghost small" id="delAsk">Delete this history</button>`;
+}
+function bindDelete(){
+  $('#delAsk')?.addEventListener('click', () => { state.confirmDelete = true; renderKeyTools(); });
+  $('#delNo')?.addEventListener('click', () => { state.confirmDelete = false; renderKeyTools(); });
+  $('#delYes')?.addEventListener('click', async () => {
+    state.confirmDelete = false;
+    try { await post(`/api/history/${H().slug}/delete`); state.list = await api('/api/histories'); await selectHistory(state.list[0].slug); }
+    catch (e) { state.draft = {error: e.message}; renderKeyTools(); }
+  });
+}
+async function startDraft(){
+  state.draftConfirm = null;
+  try {
+    const {job} = await post(`/api/draft/${H().slug}`, {});
+    state.draft = {id: job, status: 'running', done: 0, total: N() + 4, stage: 'starting…', elapsed: 0};
+    renderKeyTools(); pollDraft();
+  } catch (e) { state.draft = {error: e.message}; renderKeyTools(); }
+}
+async function pollDraft(){
+  try {
+    const d = await api(`/api/draft-jobs/${state.draft.id}`);
+    state.draft = d;
+    if (d.status === 'running') { renderKeyTools(); setTimeout(pollDraft, 1500); return; }
+    if (d.status === 'done') { state.draft = null; state.hist = await api(`/api/history/${H().slug}`); state.cp = CPS()[CPS().length-1]; state.q = (qsAt(state.cp)[0]||{}).id; await loadResults(); state.editing = true; state.edit = null; renderHistory(); }
+    else renderKeyTools();
+  } catch (e) { state.draft = {error: e.message}; renderKeyTools(); }
+}
+
+function renderEditor(){
+  const el = $('#keyEditor'); el.hidden = false;
+  if (!state.edit) state.edit = JSON.parse(JSON.stringify({name: H().name, user: H().user, facts: H().facts, checkpoints: H().checkpoints, unused: H().unused_facts || []}));
+  const E = state.edit, n = N();
+  const keyOpts = (sel) => `<option value="">(none)</option>` + E.facts.filter(f => f.key).map(f => `<option value="${esc(f.key)}" ${f.key === sel ? 'selected' : ''}>${esc(f.label)}</option>`).join('');
+  const typeOpts = (sel) => Object.entries(TYPE_LABEL).map(([k,v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${v}</option>`).join('');
+  el.innerHTML = `<div class="ke">
+    <div class="row" style="justify-content:space-between"><h3>Review the answer key</h3><div class="row"><button class="btn next small" data-act="save">Save answer key</button><button class="btn ghost small" data-act="cancel">Cancel</button></div></div>
+    <p class="note" style="margin:0">Each fact has values, each from a session on (sessions 1–${n}). Tick “forgotten” for a value the user asked the assistant to forget. Saving clears any results graded against the old key.</p>
+    <div class="grid2"><label>History name<input class="e-name" value="${esc(E.name)}"></label><label>Your name, as the assistant would say it<input class="e-user" value="${esc(E.user)}"></label></div>
+    <h3>Facts (${E.facts.length})</h3>
+    ${E.facts.map((f, fi) => `<div class="kf" data-fi="${fi}">
+      <div class="kfh"><input class="f-label" value="${esc(f.label)}" placeholder="Label, e.g. Home city"><span class="mono">${esc(f.key || 'new')}</span><button class="x" data-act="del-fact">Remove fact</button></div>
+      ${f.truth.map(([s0, v], vi) => `<div class="kv" data-vi="${vi}"><span class="mono">from session</span><input type="number" class="v-s" min="1" max="${n}" value="${s0}"><input class="v-v" value="${esc(v ?? '')}" placeholder="value" ${v === null ? 'disabled' : ''}><label style="flex-direction:row;align-items:center;gap:5px"><input type="checkbox" class="v-forget" ${v === null ? 'checked' : ''}> forgotten</label><button class="x" data-act="del-val">×</button></div>`).join('')}
+      <div><button class="x" data-act="add-val">+ Value from a later session</button></div></div>`).join('')}
+    <div class="row"><button class="btn ghost small" data-act="add-fact">+ Add a fact</button></div>
+    ${E.unused.length ? `<div><div class="cap">Other facts Claude found (not in the test) · click to add</div><div class="unused">${E.unused.map((f, ui) => `<button class="x" data-act="use-fact" data-ui="${ui}">+ ${esc(f.label)}: ${esc(f.truth[f.truth.length-1][1] ?? 'forgotten')}</button>`).join('')}</div></div>` : ''}
+    <h3>Checkpoint questions</h3>
+    ${E.checkpoints.map((c, ci) => `<div class="cpbox" data-ci="${ci}">
+      <div class="kqh"><span class="mono">Quiz after session</span><input type="number" class="c-after" min="1" max="${n}" value="${c.after}" style="width:76px"><button class="x" data-act="del-cp">Remove checkpoint</button></div>
+      ${c.questions.map((q, qi) => `<div class="kq" data-qi="${qi}">
+        <div class="kqh"><select class="q-type">${typeOpts(q.type)}</select><select class="q-key">${keyOpts(q.key)}</select><button class="x" data-act="del-q">Remove</button></div>
+        <div class="grid2"><label>Question, as the user would ask it<input class="q-q" value="${esc(q.question)}"></label><label>Answer key<input class="q-r" value="${esc(q.reference)}"></label></div>
+        <div class="grid2"><label>Outdated values (stale if given as current), separated by ;<input class="q-o" value="${esc((q.outdated||[]).join('; '))}"></label><label>Must not appear (for forgetting questions), separated by ;<input class="q-f" value="${esc((q.forbidden||[]).join('; '))}"></label></div>
+      </div>`).join('')}
+      <div><button class="x" data-act="add-q">+ Add a question</button></div></div>`).join('')}
+    <div class="row"><button class="btn ghost small" data-act="add-cp">+ Add a checkpoint</button></div>
+    <div class="row"><button class="btn next small" data-act="save">Save answer key</button><button class="btn ghost small" data-act="cancel">Cancel</button><span class="err" id="keyErr"></span></div>
+  </div>`;
+}
+function collectEditor(){
+  const E = state.edit, el = $('#keyEditor');
+  E.name = el.querySelector('.e-name').value; E.user = el.querySelector('.e-user').value;
+  el.querySelectorAll('.kf').forEach(kf => {
+    const f = E.facts[+kf.dataset.fi]; f.label = kf.querySelector('.f-label').value;
+    f.truth = [...kf.querySelectorAll('.kv')].map(kv => [+kv.querySelector('.v-s').value || 1, kv.querySelector('.v-forget').checked ? null : kv.querySelector('.v-v').value]);
+  });
+  el.querySelectorAll('.cpbox').forEach(cb => {
+    const c = E.checkpoints[+cb.dataset.ci]; c.after = +cb.querySelector('.c-after').value || 1;
+    c.questions = [...cb.querySelectorAll('.kq')].map((kq, qi) => ({...c.questions[qi], type: kq.querySelector('.q-type').value, key: kq.querySelector('.q-key').value || null,
+      question: kq.querySelector('.q-q').value, reference: kq.querySelector('.q-r').value,
+      outdated: kq.querySelector('.q-o').value.split(';').map(x => x.trim()).filter(Boolean), forbidden: kq.querySelector('.q-f').value.split(';').map(x => x.trim()).filter(Boolean)}));
+  });
+}
+$('#keyEditor').addEventListener('change', e => { if (e.target.classList.contains('v-forget')) { e.target.closest('.kv').querySelector('.v-v').disabled = e.target.checked; } });
+$('#keyEditor').addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, E = state.edit;
+  if (act === 'cancel') { state.editing = false; state.edit = null; renderHistory(); return; }
+  collectEditor();
+  const fi = +b.closest('[data-fi]')?.dataset.fi, ci = +b.closest('[data-ci]')?.dataset.ci;
+  if (act === 'del-fact') E.facts.splice(fi, 1);
+  if (act === 'add-val') { const t = E.facts[fi].truth; t.push([Math.min(N(), (t[t.length-1]?.[0] || 0) + 1), '']); }
+  if (act === 'del-val') E.facts[fi].truth.splice(+b.closest('[data-vi]').dataset.vi, 1);
+  if (act === 'add-fact') E.facts.push({key: '', label: '', truth: [[1, '']], mentions: {}});
+  if (act === 'use-fact') { const u = E.unused.splice(+b.dataset.ui, 1)[0]; E.facts.push({...u, mentions: {}}); }
+  if (act === 'del-cp') E.checkpoints.splice(ci, 1);
+  if (act === 'add-cp') E.checkpoints.push({after: N(), questions: []});
+  if (act === 'del-q') E.checkpoints[ci].questions.splice(+b.closest('[data-qi]').dataset.qi, 1);
+  if (act === 'add-q') E.checkpoints[ci].questions.push({id: '', type: 'recall', key: null, question: '', reference: '', outdated: [], forbidden: []});
+  if (act === 'save') {
+    try {
+      E.facts.forEach(f => { if (!f.key) f.key = f.label; });
+      E.checkpoints.forEach(c => c.questions.forEach((q, i) => { if (!q.id) q.id = `q${c.after}_${i+1}`; }));
+      const r = await post(`/api/history/${H().slug}/key`, {facts: E.facts, checkpoints: E.checkpoints, name: E.name, user: E.user});
+      state.editing = false; state.edit = null;
+      state.hist = await api(`/api/history/${H().slug}`); state.list = await api('/api/histories');
+      state.cp = CPS().length ? CPS()[CPS().length-1] : null; state.q = state.cp ? (qsAt(state.cp)[0]||{}).id : null;
+      await loadResults(); renderHistory();
+      $('#keyTools').insertAdjacentHTML('beforeend', `<p class="note">Saved: ${r.facts} facts and ${r.questions} questions.</p>`);
+    } catch (err) { $('#keyErr').textContent = err.message; }
+    return;
+  }
+  renderEditor();
+});
 
 // ================= DUEL =================
 function renderRunPanel(){
@@ -374,6 +546,9 @@ function renderRunPanel(){
     const d = R0.created ? new Date(R0.created).toLocaleString() : '';
     $('#srcTitle').textContent = `Live results · ${d}`;
     $('#srcSub').textContent = `Answers by ${R0.models?.answer || ''}; memory updates and grading by ${R0.models?.work || ''}.`;
+  } else if (!R0.contestants) {
+    $('#srcTitle').textContent = 'No results yet';
+    $('#srcSub').textContent = st.has_key ? 'Run it live to replay this history through the contestants.' : 'Add an API key to .env to run the contestants on this history.';
   } else {
     $('#srcTitle').textContent = 'Saved demo results (scripted)';
     $('#srcSub').textContent = st.has_key ? 'These answers were scripted from rules to show typical behavior. Run it live to see what Claude actually does.' : 'These answers were scripted from rules to show typical behavior. Add an API key to .env to run it live.';
@@ -618,6 +793,14 @@ $('#replay').onclick = () => {
 };
 function renderDuel(){
   $('#win').value = state.W; $('#winv').textContent = state.W;
+  if (!CPS().length) {
+    $('#srcTitle').textContent = 'No answer key yet';
+    $('#srcSub').textContent = 'This history needs an answer key before the duel can quiz anything. Draft one on the History step.';
+    $('#runBtns').innerHTML = `<button class="btn next small" data-go2="history">Go to History</button>`;
+    $('#runBtns [data-go2]').onclick = () => go('history');
+    ['#runInfo','#cps','#maps','#score','#qdeck','#answers','#refbox'].forEach(s => $(s).innerHTML = '');
+    return;
+  }
   renderRunPanel(); renderCps(); renderChips(); renderMaps(); renderMapLegend(); renderScore(); renderQdeck(); renderAnswers();
 }
 
@@ -646,6 +829,13 @@ function lineChart(sel, {xs, series, yMax, yMin = 0, yTicks, yFmt, xLab, xFmt, a
 function avgScore(cid){ const v = CPS().map(cp => scoreOf(cid, cp)).filter(x => x != null); return v.length ? v.reduce((a,b) => a+b, 0)/v.length : null; }
 function renderDebrief(){
   const ids = shown().filter(c => entry(c));
+  if (!CPS().length || !ids.length) {
+    $('#debriefLede').textContent = CPS().length ? 'No results yet for this history. Run the duel first.' : 'This history has no answer key yet. Draft one on the History step, then run the duel.';
+    ['#accChart','#tokChart','#matrix','#costTable','#matrixLegend'].forEach(s => $(s).innerHTML = '');
+    document.querySelectorAll('.charts .legend').forEach(l => l.innerHTML = '');
+    $('#tokNote').textContent = '';
+    return;
+  }
   lineChart('#accChart', {xs: CPS(), yMax: 100, yTicks: [0,25,50,75,100], yFmt: v => v+'%', xLab: 'quiz after session',
     series: ids.map(c => ({hex: color(c), label: cname(c), dots: true, vals: CPS().map(cp => { const s = scoreOf(c, cp); return s == null ? null : Math.round(100*s); })}))});
   const xs = [...Array(N())].map((_,i) => i+1);
@@ -736,7 +926,7 @@ async function loadResults(){
   if (state.res.mode === 'live' && we && we.window) state.W = we.window;
   const chip = $('#modeChip');
   chip.className = 'modechip' + (state.res.mode === 'live' ? ' live' : '');
-  chip.textContent = state.status.public ? 'Hosted demo · saved results' : state.res.mode === 'live' ? 'Live results' : (state.status.has_key ? (state.status.fake ? 'Test mode · stand-in AI' : 'Scripted demo · key found') : 'Scripted demo · no API key');
+  chip.textContent = state.status.public ? 'Hosted demo · saved results' : state.res.mode === 'live' ? 'Live results' : !state.res.contestants ? (state.status.has_key ? 'No results yet · key found' : 'No results yet · no API key') : (state.status.has_key ? (state.status.fake ? 'Test mode · stand-in AI' : 'Scripted demo · key found') : 'Scripted demo · no API key');
 }
 
 (async function boot(){
@@ -748,12 +938,15 @@ async function loadResults(){
     INFO = Object.fromEntries(state.status.contestants.map(c => [c.id, c]));
     $('#repoLink').href = state.status.repo;
     state.W = state.status.window || 3;
-    const list = await api('/api/histories');
-    const slug = (list[0] || {}).slug || 'nell';
+    const list = state.list = await api('/api/histories');
+    let pick = null; try { pick = localStorage.getItem('md-hist'); } catch (e) {}
+    const slug = list.some(d => d.slug === pick) ? pick : ((list[0] || {}).slug || 'nell');
     state.hist = await api(`/api/history/${slug}`);
+    state.sess = slug === 'nell' ? 11 : 1;
     let saved = null; try { saved = JSON.parse(localStorage.getItem('md-shown') || 'null'); } catch (e) {}
     state.shown = new Set(Array.isArray(saved) && saved.length ? saved.filter(c => ORDER.includes(c)) : ORDER);
-    state.cp = CPS()[CPS().length-1];
+    state.cp = CPS().length ? CPS()[CPS().length-1] : null;
+    state.q = state.cp ? ((qsAt(state.cp).find(q => q.id === 'city') || qsAt(state.cp)[0]) || {}).id : null;
     await loadResults();
   } catch (e) {
     document.querySelector('.wrap').insertAdjacentHTML('afterbegin', `<p class="err">Couldn't load the app's data: ${esc(e.message)}. Is the server running?</p>`);

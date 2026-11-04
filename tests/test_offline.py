@@ -73,6 +73,30 @@ def test_demo_results_match_history():
     assert set(r["window_variants"]) == {str(w) for w in range(1, 9)}
 
 
+def test_import_draft_and_save_key():
+    import time
+    from mduel import datasets
+    raw = [{"date": "2026-09-01", "topic": "Hi", "turns": [{"role": "human", "content": "Hi, I'm Sam."}, {"role": "ai", "content": "Hi Sam!"}]},
+           {"turns": [{"role": "user", "text": "I live in Austin."}, {"role": "assistant", "text": "Nice."}]}]
+    out = datasets.create("Sam test", raw, "Sam")
+    h = History.load(out["slug"])
+    assert h.n == 2 and h.sessions[0]["turns"][0]["role"] == "user" and h.editable
+    job = datasets.start_draft(out["slug"])
+    for _ in range(50):
+        if datasets.draft_status(job["id"])["status"] != "running":
+            break
+        time.sleep(0.1)
+    assert datasets.draft_status(job["id"])["status"] == "done", datasets.draft_status(job["id"])
+    h = History.load(out["slug"])
+    assert h.facts and h.checkpoints
+    r = datasets.save_key(out["slug"], [{"label": "Home city", "truth": [[1, "Austin"], [2, None]]}],
+                          [{"after": 2, "questions": [{"type": "forgetting", "key": "home_city", "question": "Where did I live?", "reference": "Decline.", "forbidden": ["Austin"]}]}])
+    assert r == {"facts": 1, "questions": 1}
+    h = History.load(out["slug"])
+    assert h.truth_at("home_city", 2) == (True, None)
+    datasets.delete(out["slug"])
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in list(globals().items()):

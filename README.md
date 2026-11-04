@@ -42,6 +42,12 @@ With a key, **Run it live** replays the history through every contestant with Cl
 
 To make your live results the demo's saved results: `python tools/build_demo.py --from-live`.
 
+## Your own chat history
+
+On the History step, **+ Add a history** imports a JSON file of your chats: a list of sessions, each with an optional date and topic, and its turns (`{"role": "user" | "assistant", "text": "..."}`). For **Hablemos**, run `.venv\Scripts\python tools\import_hablemos.py "path\to\hablemos\data\hablemos.db" --user "Your name"` from the memory-duel folder; it reads the lessons and turns only (never the settings table with your Gemini key).
+
+An imported history needs an answer key before it can be quizzed. **Draft the answer key with Claude** reads every session once with the answer model (roughly $0.01 per session) and proposes the facts about you, the session where each became true, changed or was forgotten, and questions at four checkpoints. Then **review and edit it**: only you know what's true, and speech-recognition errors can mislead the draft. Saving the key clears results graded against an older version. Your chats stay on your computer except when you draft a key or run the duel, when they're sent to the Anthropic API.
+
 ## Costs and safety
 
 - **A full live run is about $3** with the default models and prices. Almost all of it is the full transcript contestant, which sends the whole history (about 50,000 tokens by session 20) with every answer. That is the lesson in miniature.
@@ -71,6 +77,7 @@ mduel/              Python package
   config.py         settings from .env
   llm.py            Claude calls, disk cache, token and cost metering (from Retrieval Duel)
   history.py        loading a chat history and its answer key
+  datasets.py       importing your own histories, drafting and saving their answer keys
   contestants.py    the six memory strategies, and the answer prompt
   grading.py        memory maps (what each memory holds) and the judge
   pipeline.py       the run: replay, checkpoint quizzes, saving results
@@ -80,6 +87,7 @@ web/                the page (HTML, CSS, plain JS and SVG)
 demo/nell/          the demo history (history.json) and its saved results (results.json)
 tools/make_nell.py  writes the demo history from readable Python
 tools/build_demo.py builds the saved demo results
+tools/import_hablemos.py  imports Hablemos lessons as a history
 docs/USER-GUIDE.md  full walkthrough
 run.bat             one-click setup and start for Windows
 api/index.py        Vercel entry point (public demo mode)
@@ -88,7 +96,8 @@ tests/              offline tests (python -m tests.test_offline)
 
 ## Ideas for later
 
-- Import samples of LongMemEval and LoCoMo, and your own chat history.
+- Import samples of LongMemEval and LoCoMo.
+- Hablemos's own memory code as a seventh contestant.
 - A second track for agents: a long task interrupted after each step and resumed by a fresh session (no memory, compaction, a notes file, notes plus progress files).
 - Prompt caching for the long-context contestants, to show how it changes the cost picture.
 - A replay tool for apps with their own memory code, so the app's real memory logic can run as a contestant.

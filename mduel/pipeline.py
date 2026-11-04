@@ -119,6 +119,8 @@ def start_run(slug, contestants=None, window=None, fresh=False):
     if not config.has_key():
         raise PermissionError("Live runs need an Anthropic API key in your .env file.")
     h = History.load(slug)
+    if not h.checkpoints:
+        raise ValueError("This history has no answer key yet. Draft one on the History step first.")
     cids = [c for c in (contestants or ORDER) if c in CLASSES]
     window = int(window or config.WINDOW_SESSIONS)
     job_id = uuid.uuid4().hex[:10]

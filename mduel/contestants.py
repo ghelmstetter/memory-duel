@@ -237,6 +237,7 @@ Answer {user}'s new message using only this memory.
 def answer(h, context_text, question, t, meter=None):
     system = ANSWER_SYSTEM.format(user=h.user)
     memory = context_text.strip() or "(empty)"
-    user = f"Your memory:\n{memory}\n\nToday's date: {h.date_after(t)} (after session {t}).\n{h.user}'s message: {question}"
+    when = f"Today's date: {h.date_after(t)} (after session {t})." if h.date_after(t) else f"This is after session {t}."
+    user = f"Your memory:\n{memory}\n\n{when}\n{h.user}'s message: {question}"
     text = llm.complete(system, user, model=config.ANSWER_MODEL, task="answer", max_tokens=1500, meter=meter).strip()
     return text, approx_tokens(system + user)
