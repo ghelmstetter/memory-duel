@@ -44,7 +44,13 @@ To make your live results the demo's saved results: `python tools/build_demo.py 
 
 ## Your own chat history
 
-On the History step, **+ Add a history** imports a JSON file of your chats: a list of sessions, each with an optional date and topic, and its turns (`{"role": "user" | "assistant", "text": "..."}`). For **Hablemos**, run `.venv\Scripts\python tools\import_hablemos.py "path\to\hablemos\data\hablemos.db" --user "Your name"` from the memory-duel folder; it reads the lessons and turns only (never the settings table with your Gemini key).
+On the History step, **+ Add a history** imports a JSON file of your chats: a list of sessions, each with an optional date and topic, and its turns (`{"role": "user" | "assistant", "text": "..."}`). From the command line, `tools/import_history.py` also reads a **ChatGPT export** or a **Claude export** (`conversations.json`), or a database from Hablemos (the author's Spanish-tutor app), detecting the format by itself:
+
+```
+.venv\Scripts\python tools\import_history.py path\to\conversations.json --user "Your name"
+```
+
+Each conversation becomes one session, in date order. `--since 2026-01-01` or `--limit 40` trims a big export. Then refresh the page.
 
 An imported history needs an answer key before it can be quizzed. **Draft the answer key with Claude** reads every session once with the answer model (roughly $0.01 per session) and proposes the facts about you, the session where each became true, changed or was forgotten, and questions at four checkpoints. Then **review and edit it**: only you know what's true, and speech-recognition errors can mislead the draft. Saving the key clears results graded against an older version. Your chats stay on your computer except when you draft a key or run the duel, when they're sent to the Anthropic API.
 
@@ -87,7 +93,7 @@ web/                the page (HTML, CSS, plain JS and SVG)
 demo/nell/          the demo history (history.json) and its saved results (results.json)
 tools/make_nell.py  writes the demo history from readable Python
 tools/build_demo.py builds the saved demo results
-tools/import_hablemos.py  imports Hablemos lessons as a history
+tools/import_history.py   imports ChatGPT or Claude exports, Hablemos lessons, or a chat file
 docs/USER-GUIDE.md  full walkthrough
 run.bat             one-click setup and start for Windows
 api/index.py        Vercel entry point (public demo mode)

@@ -53,6 +53,9 @@ nav.steps button[aria-current="step"]{color:var(--fg);border-color:var(--fg);bac
 nav.steps button[aria-current="step"] .n{background:var(--fg);color:var(--ink);border-color:var(--fg)}
 
 .step{display:flex;flex-direction:column;gap:16px}
+.banner{display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,179,71,.45);border-left:4px solid var(--stale);background:rgba(255,179,71,.07);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--fg)}
+.banner .bi{flex:none;width:20px;height:20px;border-radius:50%;background:var(--stale);color:var(--ink);font-weight:800;display:grid;place-items:center;font-size:13px;margin-top:1px}
+.banner b{font-weight:700}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
 h2{font-family:var(--display);font-weight:700;font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
 h3{font-size:15px;margin:0;font-weight:700}
@@ -265,6 +268,11 @@ dialog.info dd{margin:0;font-size:14px;line-height:1.5}
     </div>
   </header>
 
+  <div class="banner" id="demoBanner" hidden role="note">
+    <span class="bi" aria-hidden="true">!</span>
+    <span><b>This is the hosted demo.</b> It shows Nell's saved results only. To test your own chat history (including a ChatGPT or Claude export) and run the strategies live with your own API key, <a id="bannerLink" href="https://github.com/ghelmstetter/memory-duel" target="_blank" rel="noopener">install Memory Duel on your computer</a>.</span>
+  </div>
+
   <!-- 1 BASICS -->
   <section class="step" id="basics" hidden>
     <div class="panel"><div class="slide" id="slide"></div></div>
@@ -294,7 +302,7 @@ dialog.info dd{margin:0;font-size:14px;line-height:1.5}
           <label>Chat file (.json)<input type="file" id="addFile" accept=".json,application/json"></label>
         </div>
         <div class="row" style="margin-top:10px"><button class="btn next small" id="addGo">Import</button><button class="btn ghost small" id="addCancel">Cancel</button><span class="err" id="addErr"></span></div>
-        <p class="note">The file is a list of sessions, each with a date, a topic and its turns: <code>[{"date": "2026-10-20", "topic": "…", "turns": [{"role": "user", "text": "…"}, {"role": "assistant", "text": "…"}]}]</code>. For Hablemos, run this in the memory-duel folder instead: <code>.venv\Scripts\python tools\import_hablemos.py "path\to\hablemos\data\hablemos.db" --user "Your name"</code>, then refresh this page. Nothing leaves your computer until you draft an answer key or run the duel; then the chats are sent to the Anthropic API.</p>
+        <p class="note">The file is a list of sessions, each with a date, a topic and its turns: <code>[{"date": "2026-10-20", "topic": "…", "turns": [{"role": "user", "text": "…"}, {"role": "assistant", "text": "…"}]}]</code>. For a ChatGPT or Claude export (conversations.json) or a Hablemos database, run this in the memory-duel folder instead: <code>.venv\Scripts\python tools\import_history.py "path\to\file" --user "Your name"</code>, then refresh this page. Nothing leaves your computer until you draft an answer key or run the duel; then the chats are sent to the Anthropic API.</p>
       </div>
     </div>
     <div class="panel track"><div class="cap">Sessions · circle size shows length · ◆ marks a checkpoint quiz</div><svg id="track" viewBox="0 0 1000 96" role="img" aria-label="Timeline of sessions"></svg></div>

@@ -937,6 +937,7 @@ async function loadResults(){
     ORDER = state.status.contestants.map(c => c.id);
     INFO = Object.fromEntries(state.status.contestants.map(c => [c.id, c]));
     $('#repoLink').href = state.status.repo;
+    $('#demoBanner').hidden = !state.status.public; $('#bannerLink').href = state.status.repo;
     state.W = state.status.window || 3;
     const list = state.list = await api('/api/histories');
     let pick = null; try { pick = localStorage.getItem('md-hist'); } catch (e) {}

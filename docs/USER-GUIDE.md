@@ -43,9 +43,9 @@
 ## Your own chat history
 
 1. **Import it.** On the History step, click **+ Add a history**, give it a name and your name, and choose a JSON file. The format: a list of sessions, each like `{"date": "2026-10-20", "topic": "…", "turns": [{"role": "user", "text": "…"}, {"role": "assistant", "text": "…"}]}`. Roles can also be human/ai or learner/tutor, and "content" works in place of "text". A file with one session per line (JSON Lines) works too.
-   - **From Hablemos:** close Hablemos (or copy `hablemos.db` somewhere), then in a Command Prompt in the memory-duel folder run
-     `.venv\Scripts\python tools\import_hablemos.py "C:\path\to\hablemos\data\hablemos.db" --user "Your name"`
-     and refresh the page. It reads only lessons and their turns, never the settings table where your Gemini key is stored. Lessons with fewer than 4 turns are skipped (`--min-turns` changes that).
+   - **From a ChatGPT or Claude export, or Hablemos:** in a Command Prompt in the memory-duel folder, run
+     `.venv\Scripts\python tools\import_history.py "C:\path\to\file" --user "Your name"`
+     and refresh the page. The file can be ChatGPT's `conversations.json` (Settings → Data controls → Export data), Claude's `conversations.json` (Settings → Privacy → Export data), or `hablemos.db` (close Hablemos first, or use a copy; it reads only lessons and their turns, never the settings table where your Gemini key is stored). Each conversation becomes one session, in date order. Sessions with fewer than 2 turns (4 for Hablemos) are skipped; `--min-turns 1` keeps them. `--since 2026-01-01` or `--limit 40` trims a big export, since drafting an answer key costs about a cent per session.
 2. **Draft the answer key.** Pick the history, then **Draft the answer key with Claude**. The page shows the cost first (about a cent per session). Claude reads each session in order, noting facts about you as they appear, change or get forgotten, keeps the 12 that make the best test (ones that changed come first), and writes questions for four checkpoints.
 3. **Review it.** The editor opens when the draft is done. For each fact, check its values and the session each one starts from; tick "forgotten" for something you asked the assistant to forget. For each question, check the wording, the answer key, and any outdated values. "Other facts Claude found" lists facts left out of the test; click one to add it. **Save answer key.**
 4. **Run the duel** on the Duel step, as with the demo.
