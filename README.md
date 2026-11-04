@@ -4,6 +4,8 @@
 
 It's built for learning, not production. Everything is small, visible and explained. It's the sequel to [Retrieval Duel](https://github.com/ghelmstetter/retrieval-duel).
 
+![The Duel step: a memory map for each of the six strategies, showing what it held about each of Nell's facts after every session, and their scores after session 20](docs/images/duel.jpg)
+
 ## What's inside
 
 1. **Basics**: an 11-screen walkthrough: the context window, why long memory costs more, kinds of memory, write policies, updating and forgetting, summaries, retrieval, memory in the weights, privacy, and how memory gets tested.
@@ -12,6 +14,16 @@ It's built for learning, not production. Everything is small, visible and explai
 4. **Debrief**: accuracy at each checkpoint against the tokens each strategy sends with every answer, results by question type, what each one cost, and when to use which.
 
 The quiz has six kinds of question: recall, updates, time order, combining facts, forgetting ("What was my old address?" after Nell asked the assistant to forget it), and false memory (asking about a cat she never mentioned).
+
+![Basics: one message from Nell, and what each of the six strategies keeps from it](docs/images/basics.jpg)
+
+![History: Nell's session 11, where she moves to Boise, next to the answer key: what was true about her after each session](docs/images/history.jpg)
+
+![The checkpoint quiz: six answers to "What was my old street address?", each with its grade and the memory it answered from](docs/images/answers.jpg)
+
+![Debrief: accuracy at each checkpoint, memory sent with every answer on a log scale, and every answer by question type](docs/images/debrief.jpg)
+
+*These screenshots show the demo's scripted results.*
 
 ## Quick start (Windows)
 
