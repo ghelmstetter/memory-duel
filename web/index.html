@@ -182,6 +182,23 @@ td .nm i{width:10px;height:10px;border-radius:50%;display:block;flex:none}
 td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
 
+.keybox{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:rgba(14,33,24,.6)}
+.keybox.inpanel{margin-bottom:12px;background:var(--ink)}
+.keybox .keytitle{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg)}
+.keybox .keysub{font-size:12.5px;color:var(--faint)}
+.keybox .legend{flex-basis:100%}
+.legend [data-tip]{cursor:help}
+.ibtn{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1px solid currentColor;background:transparent;color:inherit;font:600 11px/1 var(--body);padding:0;margin-left:6px;vertical-align:1px;opacity:.75;cursor:pointer}
+.ibtn:hover{opacity:1}
+dialog.info{max-width:min(620px,calc(100vw - 32px));width:100%;background:var(--deck);color:var(--fg);border:1px solid var(--line2);border-top:3px solid var(--k,#ffa266);border-radius:14px;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+dialog.info::backdrop{background:rgba(4,10,7,.7)}
+dialog.info .x{position:absolute;top:12px;right:12px;background:transparent;border:1px solid var(--line2);border-radius:8px;width:30px;height:30px;color:var(--muted)}
+dialog.info h3{font-family:var(--display);font-size:18px;color:var(--k);margin:0 30px 6px 0}
+dialog.info .lead{color:var(--muted);margin:0 0 14px}
+dialog.info dl{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px 14px;margin:0}
+dialog.info dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding-top:3px}
+dialog.info dd{margin:0;font-size:14px;line-height:1.5}
+@media (max-width:560px){dialog.info dl{grid-template-columns:minmax(0,1fr)} dialog.info dt{padding-top:6px}}
 .tip{position:fixed;pointer-events:none;max-width:280px;background:#06110b;border:1px solid var(--line2);border-radius:10px;padding:7px 10px;font-size:12.5px;line-height:1.4;color:var(--fg);box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:20}
 .tip .t{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-bottom:2px}
 
@@ -267,9 +284,13 @@ footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);padd
       <div><button class="btn ghost small" id="replay">▶ Replay sessions</button></div>
     </div>
     <div><div class="cap">Contestants shown</div><div class="who-chips" id="whoChips"></div></div>
+    <div class="keybox"><span class="keytitle">Memory map key</span><span class="keysub">what each memory held about each fact, after each session</span><div class="legend" id="mapLegend"></div></div>
     <div class="grid3" id="maps"></div>
-    <div class="legend" id="mapLegend"></div>
-    <div class="panel"><div class="cap" id="scoreCap">Score</div><div class="grid3" id="score"></div></div>
+    <div class="panel">
+      <div class="cap" id="scoreCap">Score</div>
+      <div class="keybox inpanel"><span class="keytitle">Answer grades</span><span class="keysub">how the judge graded each answer · hover for details</span><div class="legend" id="gradeLegend"></div></div>
+      <div class="grid3" id="score"></div>
+    </div>
     <div><div class="cap">Questions · pick one</div><div class="qdeck" id="qdeck"></div></div>
     <div class="refbox" id="refbox"></div>
     <div class="grid3" id="answers"></div>
@@ -310,6 +331,7 @@ footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);padd
     <span><a id="repoLink" href="https://github.com/ghelmstetter/memory-duel" target="_blank" rel="noopener">Source</a></span>
   </footer>
 </div>
+<dialog id="info" class="info" aria-labelledby="infoTitle"><button class="x" id="infoClose" aria-label="Close">✕</button><div id="infoBody"></div></dialog>
 <div class="tip" id="tip" hidden></div>
 <script src="/static/app.js"></script>
 </body>

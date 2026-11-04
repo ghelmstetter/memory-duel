@@ -12,9 +12,9 @@ let ORDER = ['full','window','summary','facts','rag','notes'];
 let INFO = {};
 
 const OUT = {
-  right:{c:'#7ee39a', l:'Right'}, partly:{c:'#ffd95e', l:'Partly'}, stored:{c:'#ff8a8a', l:'Still stored'},
+  right:{c:'#7ee39a', l:'Right'}, partly:{c:'#ffd95e', l:'Partly'}, stored:{c:'#ffb0c8', l:'Still stored'},
   stale:{c:'#ffb347', l:'Stale'}, missed:{c:'#ff7a3d', l:'Missed'}, invented:{c:'#c4b0ff', l:'Invented'},
-  wrong:{c:'#ff6b6b', l:'Wrong'}, leaked:{c:'#ff4d4d', l:'Leaked'},
+  wrong:{c:'#ff6b6b', l:'Wrong'}, leaked:{c:'#d93a4e', l:'Leaked'},
 };
 const OUT_ORDER = ['right','partly','stored','stale','missed','invented','wrong','leaked'];
 const SCORE = {right:1, partly:.5, stored:.5};
@@ -23,6 +23,73 @@ const ST = {
   conflict:{c:'#ffd95e', l:'Conflicting', hatch:true}, missing:{c:null, l:'Missing'}, leak:{c:'#ff6b6b', l:'Should be forgotten'},
   gone:{c:null, l:'Forgotten as asked'}, na:{c:null, l:'Not true yet'},
 };
+const STRAT = {
+  full: {lead: 'Pastes every past message into the context window with each new question.',
+    keeps: 'Every word of every past session.',
+    good: 'Nothing is lost while it fits: details, time order, corrections and their context.',
+    bad: 'Cost grows with every session and is paid again on every turn. Long inputs get less careful attention, especially in the middle. It can\u2019t forget without editing the stored history, and eventually it no longer fits in the context window.',
+    cost: 'About 51,000 tokens of memory per answer by session 20, and growing.',
+    seen: 'One long chat thread; long-context models. In practice it\u2019s usually combined with a cheaper strategy once history gets long.'},
+  window: {lead: 'Sends only the most recent sessions (chat apps often keep the last N messages) and drops everything older.',
+    keeps: 'The last N sessions, word for word.',
+    good: 'Simple, cheap and flat: recent context at a fixed cost.',
+    bad: 'Anything older than the window is gone. It forgets by accident, not by policy, and honors a \u201cforget this\u201d only once that message scrolls out.',
+    cost: 'Flat: a few sessions\u2019 worth of tokens per answer.',
+    seen: 'What happens when a chat app trims history to fit the model. Often paired with a summary of what fell out.'},
+  summary: {lead: 'After each session, a cheap model rewrites a short running summary (capped at 200 words here), folding in what\u2019s new.',
+    keeps: 'A paragraph of prose about the user.',
+    good: 'The gist and the big life events, in very little space, at a flat cost.',
+    bad: 'Small details vanish (like a 10-minute bike commute). Every rewrite can drop or distort something, and errors compound. Deleting one item means rewriting the summary.',
+    cost: 'A few hundred tokens per answer, plus one cheap rewrite per session.',
+    seen: '\u201cCompaction\u201d in agent tools, which summarize older history when the context fills up; conversation-summary memory in agent frameworks.'},
+  facts: {lead: 'After each session, a cheap model reads the chat, adds short facts about the user, and retires ones that are outdated. Only active facts are sent.',
+    keeps: 'A list of short facts, like \u201cLives in Boise.\u201d',
+    good: 'Current facts, cheaply. Easy to show the user, edit and delete, which makes privacy controls simple.',
+    bad: 'Retiring a fact throws away its history (the old job is gone). If it forgets to retire one, facts contradict each other. Details it judges minor never get saved.',
+    cost: 'A few hundred tokens per answer, plus one cheap update per session.',
+    seen: 'The memory features of chat assistants that save facts about you. Hablemos\u2019s memory update uses this add-and-retire pattern.'},
+  rag: {lead: 'Stores every past message in a search index. For each question, it finds the few closest messages (4 here) and sends only those.',
+    keeps: 'Everything, searchable.',
+    good: 'Scales to years of history at a flat cost per answer, and can find a specific old detail.',
+    bad: 'Misses when the question uses different words than the message (\u201cdog\u201d vs. \u201cbeagle\u201d). Can\u2019t tell which of two mentions is current. Keeps everything, including what the user asked to forget, unless deletion is built in.',
+    cost: 'Flat: about 1,000 tokens per answer; the index itself grows.',
+    seen: 'Chat-history search; vector-store memory in agent frameworks. The keyless demo searches by shared words; live runs use meaning-based search if fastembed is installed.'},
+  notes: {lead: 'After each session, the assistant edits its own notebook: it writes, rewrites and deletes notes (capped at 400 words), and decides how to organize them.',
+    keeps: 'Notes it chose: usually a profile, a timeline of changes, preferences and open threads.',
+    good: 'Can keep both the current facts and their history; adapts to what matters for this user; deletes on request.',
+    bad: 'Only as good as the model\u2019s judgment, so it\u2019s less predictable. Costs a little more to maintain.',
+    cost: 'From a few hundred to about 1,500 tokens per answer, depending on how much it decides to keep, plus one update per session.',
+    seen: 'MemGPT / Letta, and agents that keep a memory or notes file. Simplified here: it edits once at the end of each session, not with tool calls mid-chat.'},
+};
+const GRADE_HELP = {
+  right: 'Matches the answer key. Declining is right when the key says it should decline.',
+  partly: 'Some of the answer is right; some is missing. Counts as half.',
+  stored: 'Declined to share what the user asked it to forget, but the memory still holds it. Counts as half.',
+  stale: 'Gave a value that used to be true, as if it still were.',
+  missed: 'Said it didn\u2019t know, though the user had told it.',
+  invented: 'Made up an answer to something the user never said.',
+  wrong: 'Incorrect in some other way.',
+  leaked: 'Repeated something the user asked it to forget.',
+};
+const STATE_HELP = {
+  current: 'Holds the value that\u2019s true now.', stale: 'Holds only an older value, as if it were still true.',
+  partial: 'Holds part of it.', conflict: 'Holds the old and new values as if both were true.',
+  missing: 'Holds nothing about this fact.', leak: 'Still holds something the user asked it to forget.',
+  gone: 'Forgotten, as the user asked.', na: 'Not true yet, so there\u2019s nothing to know.',
+};
+const infoBtn = cid => `<button class="ibtn" data-info="${cid}" aria-label="About ${cname(cid)}" title="About ${cname(cid)}">i</button>`;
+function openInfo(cid){
+  const x = STRAT[cid]; if (!x) return;
+  const d = $('#info'); d.style.setProperty('--k', color(cid));
+  $('#infoBody').innerHTML = `<h3 id="infoTitle">${cname(cid)}</h3><p class="lead">${x.lead}</p><dl>
+    <dt>Keeps</dt><dd>${x.keeps}</dd><dt>Good at</dt><dd>${x.good}</dd><dt>Weak at</dt><dd>${x.bad}</dd>
+    <dt>Cost</dt><dd>${x.cost}</dd><dt>Seen in</dt><dd>${x.seen}</dd></dl>`;
+  if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-info]'); if (b) { e.preventDefault(); e.stopPropagation(); openInfo(b.dataset.info); } });
+$('#infoClose').addEventListener('click', () => $('#info').close());
+$('#info').addEventListener('click', e => { if (e.target === $('#info')) $('#info').close(); });
+
 const TYPE_LABEL = {recall:'Recall', update:'Update', time_order:'Time order', combining:'Combining facts', forgetting:'Forgetting', false_memory:'False memory'};
 
 async function api(path, opts) {
@@ -447,16 +514,17 @@ function renderMaps(upto = state.cp){
     const how = cid === 'window' ? `Sends only the last ${(e && e.window) || state.W} session${((e && e.window) || state.W) > 1 ? 's' : ''}.` : (INFO[cid]||{}).how;
     if (!e) return `<div class="map" style="--k:${color(cid)}"><div class="hd"><span>${cname(cid)}</span></div><p class="how">Not run yet.</p></div>`;
     return `<div class="map" style="--k:${color(cid)}">
-      <div class="hd"><span>${cname(cid)}</span><span class="tok">${tok.toLocaleString()} tokens</span></div>
+      <div class="hd"><span>${cname(cid)}${infoBtn(cid)}</span><span class="tok">${tok.toLocaleString()} tokens</span></div>
       <div class="tokbar" title="Memory sent with each answer after session ${t}"><i style="width:${Math.max(1.5, 100*tok/mx)}%"></i></div>
       ${mapSvg(cid, upto)}
       <p class="how">${esc(how)}</p></div>`;
   }).join('');
 }
-bindTips($('#maps'));
+bindTips($('#maps')); bindTips($('#mapLegend')); bindTips($('#gradeLegend')); bindTips($('#answers'));
 function renderMapLegend(){
   const sw = st => st==='missing' ? `<i style="border:1px solid #5e7e6a"></i>` : st==='gone' ? `<i style="background:#0b1c13;box-shadow:inset 0 0 0 3.5px #0b1c13, inset 0 0 0 6px #7ee39a"></i>` : st==='na' ? `<i style="background:#0b1c13;border:1px solid #1e3d2d"></i>` : st==='conflict' ? `<i style="background:repeating-linear-gradient(45deg,#ffd95e 0 2px,rgba(255,217,94,.35) 2px 4px)"></i>` : `<i style="background:${ST[st].c}"></i>`;
-  $('#mapLegend').innerHTML = ['current','stale','partial','conflict','missing','leak','gone','na'].map(s => `<span>${sw(s)}${ST[s].l}</span>`).join('');
+  $('#mapLegend').innerHTML = ['current','stale','partial','conflict','missing','leak','gone','na'].map(s => `<span data-tip="${ST[s].l}|${esc(STATE_HELP[s])}">${sw(s)}${ST[s].l}</span>`).join('');
+  $('#gradeLegend').innerHTML = OUT_ORDER.map(g => `<span data-tip="${OUT[g].l}|${esc(GRADE_HELP[g])}"><i style="background:${OUT[g].c}"></i>${OUT[g].l}</span>`).join('');
 }
 
 function renderScore(){
@@ -468,7 +536,7 @@ function renderScore(){
     const sc = scoreOf(cid, state.cp);
     const bar = OUT_ORDER.filter(o => counts[o]).map(o => `<i style="width:${100*counts[o]/n}%;background:${OUT[o].c}" title="${OUT[o].l}: ${counts[o]}"></i>`).join('');
     const parts = OUT_ORDER.filter(o => counts[o]).map(o => `${counts[o]} ${OUT[o].l.toLowerCase()}`).join(' · ');
-    return `<div class="sc" style="--k:${color(cid)}"><div class="lab"><b>${cname(cid)}</b>${sc == null ? '<span>–</span>' : sc === best && best > 0 ? `<span class="win">Winner: ${Math.round(100*sc)}%</span>` : `<span>${Math.round(100*sc)}%</span>`}</div><div class="bar">${bar}</div><div class="lab"><span>${parts || 'no results'}</span></div></div>`;
+    return `<div class="sc" style="--k:${color(cid)}"><div class="lab"><b>${cname(cid)}${infoBtn(cid)}</b>${sc == null ? '<span>–</span>' : sc === best && best > 0 ? `<span class="win">Winner: ${Math.round(100*sc)}%</span>` : `<span>${Math.round(100*sc)}%</span>`}</div><div class="bar">${bar}</div><div class="lab"><span>${parts || 'no results'}</span></div></div>`;
   }).join('');
 }
 function renderQdeck(){
@@ -519,7 +587,7 @@ function renderAnswers(){
     if (a.error) return `<div class="ans" style="--k:${color(cid)}"><div class="who"><span>${cname(cid)}</span><span class="verdict" style="color:#ff6b6b">Error</span></div><p class="err">${esc(a.error)}</p></div>`;
     const o = OUT[a.grade] || {c:'#93b4a0', l:a.grade};
     return `<div class="ans" style="--k:${color(cid)}">
-      <div class="who"><span>${cname(cid)}</span><span class="verdict" style="color:${o.c}">${o.l}</span></div>
+      <div class="who"><span>${cname(cid)}${infoBtn(cid)}</span><span class="verdict" style="color:${o.c}" data-tip="${o.l}|${esc(GRADE_HELP[a.grade] || '')}">${o.l}</span></div>
       <div class="text">${esc(a.answer)}</div>
       <div class="mem">${evidenceHtml(cid, q, a)}</div>
       <p class="why">${esc(a.why || '')}</p>
@@ -629,7 +697,7 @@ const GUIDE = [
  ['rag','Every message, searchable','Huge histories at flat cost; specific old details','Questions worded differently from the original; telling which mention is current; deletion','Flat per answer; the index grows'],
  ['notes','Notes the assistant writes, edits and deletes itself','Adapts what it keeps; can keep a timeline and preferences','Depends on the model’s judgment; harder to predict','Small, plus one update call per session'],
 ];
-function renderGuide(){ $('#guide').innerHTML = GUIDE.map(([c,keeps,good,bad,cost]) => `<tr><td><span class="nm"><i style="background:${color(c)}"></i>${cname(c)}</span></td><td>${keeps}</td><td>${good}</td><td>${bad}</td><td>${cost}</td></tr>`).join(''); }
+function renderGuide(){ $('#guide').innerHTML = GUIDE.map(([c,keeps,good,bad,cost]) => `<tr><td><span class="nm"><i style="background:${color(c)}"></i>${cname(c)}${infoBtn(c)}</span></td><td>${keeps}</td><td>${good}</td><td>${bad}</td><td>${cost}</td></tr>`).join(''); }
 
 // ================= NAV + BOOT =================
 const STEPS = ['basics','history','duel','debrief'];
