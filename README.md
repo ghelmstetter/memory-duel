@@ -11,7 +11,7 @@
 
 It's also a hands-on tutorial. A fictional user, Nell, chats with an assistant 20 times over five months while her life changes. Each memory strategy replays those chats and keeps whatever its strategy keeps. At four checkpoints the assistant is quizzed using only that memory, and a judge grades each answer against an exact answer key.
 
-Small enough to watch, real enough to use: it runs live models, grades every answer against an exact answer key, checks what each memory actually holds, and meters every token. Use it to learn how memory strategies behave, or point it at your own chat history. It's the sequel to [Retrieval Duel](https://github.com/ghelmstetter/retrieval-duel).
+It runs the strategies with live models, grades every answer against an exact answer key, checks what each memory actually holds, and counts the tokens each one uses. You can use it to learn how the strategies behave, or run it on your own chat history. It's the sequel to [Retrieval Duel](https://github.com/ghelmstetter/retrieval-duel).
 
 ![The Duel step: a memory map for each of the six strategies, showing what it held about each of Nell's facts after every session, and their scores after session 20](docs/images/duel.jpg)
 
