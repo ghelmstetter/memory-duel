@@ -323,7 +323,7 @@ def build_rag():
                     st = grading._window_state(h, q["key"], t, held)
                     g, text = key_answer(q, st[0], st[1], t)
                     why = {"right": f"The search found it (session {max(s for s in held if str(s) in h.fact_by_key[q['key']]['mentions'])})." if held & set(h.mentions(q["key"])) else "",
-                           "missed": "The search didn't find the message that has the answer: it doesn't share enough words with the question.",
+                           "missed": "Word matching didn't find the message that has the answer: it doesn't share enough words with the question. Meaning-based search usually would.",
                            "stale": "The search found only an older mention.",
                            "partly": "The search found only a partial mention."}.get(g, "")
                 else:
@@ -332,7 +332,7 @@ def build_rag():
                 answers.append({"id": q["id"], "answer": text, "grade": g, "why": why, "tokens_in": tin, "dollars": dol,
                                 "evidence": {"kind": "hits", "hits": [{"session": x["session"], "date": x["date"], "text": x["text"][:500], "score": x["score"]} for x in ev["hits"]]}})
             cps[str(t)] = {"memory": "", "memory_tokens": 0, "answers": answers}
-    return entry("rag", timeline, cps)
+    return entry("rag", timeline, cps, search=c.emb.kind)
 
 
 def build_scripted(cid):

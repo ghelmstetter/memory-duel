@@ -59,7 +59,7 @@ python -m mduel
 
 ## Saved results and live runs
 
-Without a key, the app shows **saved demo results**. These are scripted: three contestants (full transcript, sliding window, RAG) are computed from the chat text itself, including a word-matching search; the other three need a model to write their memory, so their memory contents were written by hand to show typical behavior and typical mistakes. The page labels them as scripted.
+Without a key, the app shows **saved demo results**. These are scripted: three contestants (full transcript, sliding window, RAG) are computed from the chat text itself, including a word-matching search (live runs use meaning-based search instead, so RAG does better there); the other three need a model to write their memory, so their memory contents were written by hand to show typical behavior and typical mistakes. The page labels them as scripted.
 
 With a key, **Run it live** replays the history through every contestant with Claude: a cheap model (Haiku) updates the summary, facts and notes after each session and checks what each memory holds; a stronger model (Sonnet) answers the quiz; the cheap model grades. You can run all six or only the ones shown, and rerun just the sliding window at a different size.
 
@@ -92,7 +92,7 @@ An imported history needs an answer key before it can be quizzed. **Draft the an
 | Sliding window | nothing | the last N sessions (N set on the Duel page) |
 | Rolling summary | the cheap model rewrites a summary, capped at 200 words | the summary |
 | Fact memory | the cheap model adds new facts and retires outdated ones (the add/retire design many chat apps use) | the active facts |
-| RAG over past chats | nothing (every message is stored in a search index) | the 4 past messages closest to the question |
+| RAG over past chats | nothing (every message is stored in a search index) | the 4 past messages closest in meaning to the question (vector search with fastembed; word matching in the scripted demo) |
 | Self-editing memory | the cheap model edits its own notebook (writes, rewrites and deletes notes), capped at 400 words | the notebook |
 
 **The answer key is an event log, not prose.** Each fact about Nell has a value and the session where it became true (her city is Denver from session 1 and Boise from session 11; her old address is forgotten on request at session 13). The quiz questions and reference answers come straight from it, and the memory maps are checked against it: for the transcript contestants by which sessions they hold; for the summary, facts and notes by a cheap model that reads the memory and reports each fact's state.

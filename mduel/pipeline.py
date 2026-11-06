@@ -197,6 +197,8 @@ def run_contestant(h, cid, window, run_meter, prog=None):
              "meter": {"answers": answers_m.as_dict(), "upkeep": upkeep.as_dict(), "grading": grading_m.as_dict()}}
     if cid == "window":
         entry["window"] = window
+    if cid == "rag":
+        entry["search"] = c.emb.kind  # "fastembed" (meaning-based) or "tfidf" (word matching)
     return entry
 
 

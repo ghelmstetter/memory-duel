@@ -51,7 +51,7 @@ const STRAT = {
   rag: {lead: 'Stores every past message in a search index. For each question, it finds the few closest messages (4 here) and sends only those.',
     keeps: 'Everything, searchable.',
     good: 'Scales to years of history at a flat cost per answer, and can find a specific old detail.',
-    bad: 'Misses when the question uses different words than the message (\u201cdog\u201d vs. \u201cbeagle\u201d). Can\u2019t tell which of two mentions is current. Keeps everything, including what the user asked to forget, unless deletion is built in.',
+    bad: 'Can\u2019t tell which of two mentions is current. Can miss questions that point at something indirectly (\u201cWhere do I live?\u201d can pull up an old letter about Denver). With plain word matching it also misses synonyms (\u201cdog\u201d vs. \u201cbeagle\u201d); meaning-based search handles those. Keeps everything, including what the user asked to forget, unless deletion is built in.',
     cost: 'Flat: about 1,000 tokens per answer; the index itself grows.',
     seen: 'Chat-history search; vector-store memory in agent frameworks. The keyless demo searches by shared words; live runs use meaning-based search if fastembed is installed.'},
   notes: {lead: 'After each session, the assistant edits its own notebook: it writes, rewrites and deletes notes (capped at 400 words), and decides how to organize them.',
@@ -245,7 +245,7 @@ const SLIDES = [
     return s; }},
  {h:'Retrieval: searching your own past',
   p:["RAG over past chats stores old messages in a search index and pulls back the few that look most like the new question. It scales to years of history at a flat cost per answer.",
-     "It inherits retrieval’s blind spots: if the question uses different words than the old message, the search can miss it, and it can’t tell which of two mentions is current. (Retrieval Duel covers search in depth.)"],
+     "It inherits retrieval’s blind spots. It can’t tell which of two mentions is current, and it can miss questions that point at something indirectly. Plain word matching also misses synonyms (“dog” vs. “beagle”); meaning-based search, which compares meanings as vectors, handles those. (Retrieval Duel covers search in depth.)"],
   art:()=>{
     let s=T(20,26,'Past messages, placed by meaning',{fs:12,fill:'#93b4a0'});
     const pts=[[80,80],[120,150],[160,60],[200,200],[240,120],[90,210],[300,70],[330,180],[260,230],[150,110],[360,120],[60,140]];
@@ -683,6 +683,7 @@ function mapSvg(cid, upto){
     s += `<rect x="${L+(a-1)*cw}" y="${top-3}" width="${(t-a+1)*cw}" height="${bottom-top+3}" fill="none" stroke="#ff8f5a" stroke-width="1.5" rx="3"/>`; }
   return `<svg viewBox="0 0 ${W} ${bottom+2}" role="img" aria-label="${cname(cid)} memory map">${s}</svg>`;
 }
+const searchLabel = k => k === 'fastembed' ? 'meaning-based (fastembed)' : 'word matching (shared words only)';
 function relTok(cid, tok, tokAt){
   const full = state.shown.has('full') && entry('full') ? tokAt('full') : 0;
   if (!full) return '';
@@ -696,7 +697,8 @@ function renderMaps(upto = state.cp){
   const mx = Math.max(1, ...ORDER.map(tokAt));
   $('#maps').innerHTML = shown().map(cid => {
     const e = entry(cid), tok = tokAt(cid);
-    const how = cid === 'window' ? `Sends only the last ${(e && e.window) || state.W} session${((e && e.window) || state.W) > 1 ? 's' : ''}.` : (INFO[cid]||{}).how;
+    const how = cid === 'window' ? `Sends only the last ${(e && e.window) || state.W} session${((e && e.window) || state.W) > 1 ? 's' : ''}.`
+      : cid === 'rag' && e && e.search ? `${(INFO[cid]||{}).how} Search: ${searchLabel(e.search)}.` : (INFO[cid]||{}).how;
     if (!e) return `<div class="map" style="--k:${color(cid)}"><div class="hd"><span>${cname(cid)}</span></div><p class="how">Not run yet.</p></div>`;
     return `<div class="map" style="--k:${color(cid)}">
       <div class="hd"><span>${cname(cid)}${infoBtn(cid)}</span></div>
@@ -758,7 +760,8 @@ function evidenceHtml(cid, q, a){
     return h;
   }
   if (ev.kind === 'hits') {
-    return `Closest ${ev.hits.length} past messages\n` + ev.hits.map(x => `<span class="tag">s${x.session}</span> ${mark(x.text.length > 260 ? x.text.slice(0, 260) + '…' : x.text, words)}`).join('\n\n');
+    const se = entry(cid) && entry(cid).search;
+    return `Closest ${ev.hits.length} past messages${se ? ' · ' + searchLabel(se) : ''}\n` + ev.hits.map(x => `<span class="tag">s${x.session}</span> ${mark(x.text.length > 260 ? x.text.slice(0, 260) + '…' : x.text, words)}`).join('\n\n');
   }
   const text = (ev.text != null ? ev.text : '') || (entry(cid)?.checkpoints[String(t)]?.memory) || '';
   return text ? mark(text, words) : '(empty)';
@@ -898,7 +901,7 @@ const GUIDE = [
  ['window','The last N sessions','Recent context, simple and cheap','Anything older than the window; forgets by accident, not on request','Flat'],
  ['summary','A short running note, rewritten each session','Gist and big events in little space','Small details; errors compound with each rewrite','Flat, plus a small rewrite each session'],
  ['facts','A list of short facts, added and retired','Current facts, cheap; easy to show, edit and delete','History of changes; contradictions if the old fact isn’t retired; details judged too minor','Small, grows slowly; one cheap update per session'],
- ['rag','Every message, searchable','Huge histories at flat cost; specific old details','Questions worded differently from the original; telling which mention is current; deletion','Flat per answer; the index grows'],
+ ['rag','Every message, searchable','Huge histories at flat cost; specific old details','Telling which mention is current; questions that point at things indirectly; deletion','Flat per answer; the index grows'],
  ['notes','Notes the assistant writes, edits and deletes itself','Adapts what it keeps; can keep a timeline and preferences','Depends on the model’s judgment; harder to predict','Small, plus one update call per session'],
 ];
 function renderGuide(){ $('#guide').innerHTML = GUIDE.map(([c,keeps,good,bad,cost]) => `<tr><td><span class="nm"><i style="background:${color(c)}"></i>${cname(c)}${infoBtn(c)}</span></td><td>${keeps}</td><td>${good}</td><td>${bad}</td><td>${cost}</td></tr>`).join(''); }
